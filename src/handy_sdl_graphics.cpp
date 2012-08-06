@@ -226,7 +226,7 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
 
         // check 3 videomodes: 480x272, 400x240, 320x240
         for(vm = NUMOFVIDEOMODES-1; vm >= 0; vm--) {
-            if(SDL_VideoModeOK(VModes[vm].x, VModes[vm].y, 16, SDL_HWSURFACE | SDL_DOUBLEBUF) != 0) {
+            if(SDL_VideoModeOK(VModes[vm].x, VModes[vm].y, 16, videoflags) != 0) {
                 surfacewidth = VModes[vm].x;
                 surfaceheight = VModes[vm].y;
                 break;
@@ -247,7 +247,7 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     //
     // All the rendering is done in the graphics buffer and is then
     // blitted to the mainSurface and thus to the screen.
-    HandyBuffer = SDL_CreateRGBSurface(SDL_HWSURFACE,
+    HandyBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
         LynxWidth,
         LynxHeight,
         sdl_bpp_flag,
@@ -281,13 +281,13 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     {
             sdlemu_init_overlay(mainSurface, overlay_format, LynxWidth , LynxHeight );
     }
+#endif
 
     /* Setting Window Caption */
     SDL_WM_SetCaption( "Handy/SDL", "HANDY");
     SDL_EnableKeyRepeat( 0, 0); // Best options to use
     SDL_EventState( SDL_MOUSEMOTION, SDL_IGNORE); // Ignoring mouse stuff.
     SDL_ShowCursor( 0 ); // Removing mouse from window. Very handy in fullscreen mode :)
-#endif
 
     delta = (uint8*)malloc(LynxWidth*LynxHeight*sizeof(Uint32)*4);
     memset(delta, 255, LynxWidth*LynxHeight*sizeof(Uint32)*4);
@@ -403,7 +403,9 @@ int handy_sdl_video_setup_yuv(void)
 int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
 {
     Uint32             videoflags;
-
+#ifdef DINGUX
+    videoflags = SDL_HWSURFACE | SDL_DOUBLEBUF;
+#else
     if (info->hw_available)
     {
         printf("SDL Hardware\n");
@@ -416,7 +418,7 @@ int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
             printf("SDL Software\n");
             videoflags = SDL_SWSURFACE;
     }
-
+#endif
     return videoflags;
 }
 

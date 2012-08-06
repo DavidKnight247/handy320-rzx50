@@ -31,9 +31,19 @@ endif
 
 TARGET     = handy_sdl
 
+ifeq "$(OSTYPE)" "msys"
 # Note that we use optimization level 2 instead of 3--3 doesn't seem to gain much over 2
 CFLAGS   = -DDINGUX -MMD -Wall -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer 
 CPPFLAGS = -DDINGUX -MMD -Wall -O2 -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
+else
+ifeq "$(OSTYPE)" "dingux"
+CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -fomit-frame-pointer -fsigned-char -ffast-math -G0 -mno-mips16 -pipe \
+	-falign-functions -falign-loops -falign-labels -falign-jumps -fexpensive-optimizations \
+	-fsingle-precision-constant -finline -finline-functions -fstrict-aliasing \
+	-fno-strength-reduce -funsafe-math-optimizations -mbranch-likely -funroll-loops -DANSI_GCC -DSDL_PATCH 
+CPPFLAGS = $(CFLAGS)
+endif
+endif
 
 ifeq "$(OSTYPE)" "msys"	
 LDFLAGS = -mconsole
@@ -42,8 +52,9 @@ LDFLAGS = -mconsole
 LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lSDLmain -lmingw32 -lz
 else
 ifeq "$(OSTYPE)" "dingux"
-LDFLAGS = 
-LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lz
+LDFLAGS = -lstdc++
+#LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lz
+LIBS = -lstdc++ -lSDL -lz
 endif
 endif
 
