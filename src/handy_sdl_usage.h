@@ -8,8 +8,10 @@ printf(" romfile              : Filename of the romfile. It can have several\n")
 printf("                        extensions (.lnx/.o/.com/.bin). Gzipped and\n");
 printf("                        zipped (.gz and .zip) are also supported.\n");
 printf(" -frameskip 1 - 9     : Options to skip some frames. Default is 1.\n");
+#ifndef DINGUX
 printf(" -bpp 0,8,15,16,24,32 : Set the bpp backend. 0 = autodetect\n");
 printf(" -rtype 1,2,3         : Select rendering. 1 = SDL, 2 = OpenGL, 3 = YUV\n");
+#endif
 printf(" -[no]fullscreen      : Disable/Enable fullscreen rendering mode.\n");
 printf(" -[no]throttle        : Disable/Enable throttle to a max of 60FPS.\n");
 printf(" -[no]sound           : Disable/Enable sound support.\n");
@@ -19,8 +21,8 @@ printf(" SDL Rendering options:\n");
 printf("\n");
 printf(" -stype 1,2,3         : Select Scaling/Scanline routine\n");
 printf("                        1 = SDLEMU v1 (compatible with all SDL versions)\n");
-printf("                        1 = SDLEMU v2 (possibly faster but can be broken)\n");
-printf("                        1 = Pierre Doucet v1 (compatible, but possibly slow)\n");
+printf("                        2 = SDLEMU v2 (possibly faster but can be broken)\n");
+printf("                        3 = Pierre Doucet v1 (compatible, but possibly slow)\n");
 printf(" -[no]fps             : Disable/Enable FPS counter (windowed only).\n");
 printf("                        Warning : cpu hungry.\n");
 printf(" -2 (or -3 or -4)     : Scale display by 2 (or 3 or 4)\n");
@@ -34,6 +36,7 @@ printf("                         1 = TV Mode,    2 = 2xSAI,        3 = Super2xSA
 printf("                         4 = SuperEagle, 5 = MotionBlur,   6 = Simple2x, \n");
 printf("                         7 = Bilinear,   8 = BilinearPlus, 9 = Pixelate, \n");
 printf("                        10 = Average\n");
+#ifndef DINGUX
 printf("\n");
 printf(" OpenGL Rendering options:\n");
 printf("\n");
@@ -50,5 +53,6 @@ printf("\n");
 printf(" -format 1 - 5        : Select the desired YUV Overlay format\n");
 printf("                        1 = YV12, 2 = IYUV, 3 = YUY2\n");
 printf("                        4 = UYVY, 5 = YVYU\n");
+#endif
 
 }

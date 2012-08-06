@@ -13,25 +13,40 @@
 
 OSTYPE=msys
 
-SYSTYPE    = __GCCWIN32__
+ifeq "$(OSTYPE)" "msys"	
 EXESUFFIX  = .exe
-GLLIB      = -lopengl32
-ICON       = 
-SDLLIBTYPE = --libs
 MSG        = Win32 on MinGW
 
 CC         = gcc
 LD         = gcc
+else
+ifeq "$(OSTYPE)" "dingux"
+EXESUFFIX  = .dge
+MSG = Dingux
+
+CC = mipsel-linux-uclibc-gcc
+LD = mipsel-linux-uclibc-gcc
+endif
+endif
+
 TARGET     = handy_sdl
 
 # Note that we use optimization level 2 instead of 3--3 doesn't seem to gain much over 2
-CFLAGS   = -MMD -Wall -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer 
-CPPFLAGS = -MMD -Wall -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
+CFLAGS   = -DDINGUX -MMD -Wall -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer 
+CPPFLAGS = -DDINGUX -MMD -Wall -O2 -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
 
+ifeq "$(OSTYPE)" "msys"	
+LDFLAGS = -mconsole
 
-LDFLAGS =
+#LIBS = -lSDL -lSDLmain -lmingw32 -lstdc++ -lz 
+LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lSDLmain -lmingw32 -lz
+else
+ifeq "$(OSTYPE)" "dingux"
+LDFLAGS = 
+LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lz
+endif
+endif
 
-LIBS = -lSDL -lSDLmain -lmingw32 -lstdc++ -lz $(GLLIB)
 
 INCS = -I./src -I./src/handy-0.95 -I./src/sdlemu
 
@@ -45,10 +60,8 @@ OBJS = \
 		obj/system.o \
 		obj/errorhandler.o \
 		obj/unzip.o \
-		obj/sdlemu_opengl.o \
 		obj/sdlemu_filter.o \
 		obj/sdlemu_video.o \
-		obj/sdlemu_overlay.o \
 		obj/handy_sdl_main.o \
 		obj/handy_sdl_handling.o \
 		obj/handy_sdl_graphics.o \
