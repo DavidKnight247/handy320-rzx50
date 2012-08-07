@@ -516,6 +516,7 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
 #ifdef DINGUX
     Uint8 *dst_offset = (Uint8 *)dst->pixels + (dst->w - 320) + (dst->h - 204) * dst->w;
 
+    if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
     switch( filter ) {
         case 0: break;
         case 1: TVMode((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
@@ -529,6 +530,7 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
         case 9: Pixelate((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
         case 10: Average((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
     }
+    if (SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
 #else
     switch( filter ) {
         case 0: break;
@@ -546,6 +548,54 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
 #endif
 }
 
+/* Bresenham's upscale routine */
+void UpscaleBresenham(Uint16 *src, 
+                      Uint32 src_pitch,
+                      Uint32 src_w, 
+                      Uint32 src_h, 
+                      Uint16 *dst, 
+                      Uint32 dst_pitch, 
+                      Uint32 dst_w, 
+                      Uint32 dst_h)
+{
+    int midw = dst_w / 2 * 3 / 2;
+    int midh = dst_h / 2 * 3 / 2;
+    int Ew = 0;
+    int Eh = 0;
+    int source = 0, target = 0;
+    int dh = 0;
+    int i, j;
+    
+    for(i = 0; i < dst_h; i++) {
+        Ew = 0;
+        source = dh * src_w;
+        
+        for(j = 0; j < dst_w; j++) {
+            Uint16 c;
+            
+            c = src[source];
+            
+            #define AVERAGE(z, x) ((((z) & 0xF7DE) >> 1) + (((x) & 0xF7DE) >> 1))
+            
+            if((Ew >= midw) && (Eh >= midh)) {
+                c = AVERAGE(src[source+1], src[source+src_w]);
+            } else {
+                if(Ew >= midw) { // average + 1
+                    c = AVERAGE(c, src[source+1]);
+                }
+                if(Eh >= midh) { // average + src_w
+                    c = AVERAGE(c, src[source+src_w]);
+                }
+            }
+                
+            dst[target++] = c;
+            
+            Ew += src_w; if(Ew >= dst_w) { Ew -= dst_w; source += 1; }
+        }
+        
+        Eh += src_h; if(Eh >= dst_h) { Eh -= dst_h; dh++; }
+    }
+}
 
 inline void handy_sdl_draw_graphics(void)
 {
@@ -562,8 +612,19 @@ inline void handy_sdl_draw_graphics(void)
 #ifdef SDL_MEMCPY
             memcpy(mainSurface->pixels, HandyBuffer->pixels, LynxWidth * LynxHeight* bpp);
 #else
-            //SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
-            SDL_SoftStretch( HandyBuffer, NULL, mainSurface, NULL );
+#ifndef DINGUX
+            SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
+#else
+            UpscaleBresenham((Uint16 *)HandyBuffer->pixels, 
+                                            HandyBuffer->pitch, 
+                                            160,
+                                            102,
+                                            (Uint16 *)mainSurface->pixels, 
+                                            mainSurface->pitch, 
+                                            mainSurface->w, 
+                                            mainSurface->h);
+            //SDL_SoftStretch( HandyBuffer, NULL, mainSurface, NULL );
+#endif
 #endif
         }
         else
@@ -602,7 +663,7 @@ inline void handy_sdl_scale(void)
     bpp = mainSurface->format->BytesPerPixel;
 
     // SLOW !!!
-    if (SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(HandyBuffer);
+    if (SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
         //while (SDL_LockSurface(mainSurface) < 0) SDL_Delay(10);
 
     increment = LynxScale*(LynxScale-1)*LynxWidth;
