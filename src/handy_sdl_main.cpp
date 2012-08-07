@@ -349,9 +349,9 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[i], "-nofps"))         framecounter = 0;
         if (!strcmp(argv[i], "-sound"))         gAudioEnabled = TRUE;
         if (!strcmp(argv[i], "-nosound"))         gAudioEnabled = FALSE;
+#ifndef DINGUX
         if (!strcmp(argv[i], "-fullscreen"))    Fullscreen = 1;
         if (!strcmp(argv[i], "-nofullscreen"))    Fullscreen = 0;
-#ifndef DINGUX
         if (!strcmp(argv[i], "-fsaa"))            fsaa = 1;
         if (!strcmp(argv[i], "-nofsaa"))        fsaa = 0;
         if (!strcmp(argv[i], "-accel"))        accel = 1;
@@ -477,9 +477,9 @@ int main(int argc, char *argv[])
 
     // Initialise Handy/SDL video
 #ifndef DINGUX
-    if(!handy_sdl_video_setup(rendertype,fsaa,Fullscreen, bpp, LynxScale, accel, sync))
+    if(!handy_sdl_video_setup(rendertype, fsaa, Fullscreen, bpp, LynxScale, accel, sync))
 #else
-    if(!handy_sdl_video_setup(1,0,Fullscreen, bpp, LynxScale, 0, 0))
+    if(!handy_sdl_video_setup(1, 0, 0, bpp, LynxScale, 0, 0))
 #endif
     {
         return 0;
@@ -518,6 +518,10 @@ int main(int argc, char *argv[])
                     KeyMask = handy_sdl_on_key_up(handy_sdl_event.key, KeyMask);
                     break;
                 case SDL_KEYDOWN:
+                    if(handy_sdl_event.key.keysym.sym == SDLK_BACKSPACE) {
+                        filter = (filter + 1) % 10;
+                        break;
+                    }
                     KeyMask = handy_sdl_on_key_down(handy_sdl_event.key, KeyMask);
                     break;
                 default:

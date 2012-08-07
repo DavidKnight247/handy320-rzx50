@@ -11,8 +11,8 @@ printf(" -frameskip 1 - 9     : Options to skip some frames. Default is 1.\n");
 #ifndef DINGUX
 printf(" -bpp 0,8,15,16,24,32 : Set the bpp backend. 0 = autodetect\n");
 printf(" -rtype 1,2,3         : Select rendering. 1 = SDL, 2 = OpenGL, 3 = YUV\n");
-#endif
 printf(" -[no]fullscreen      : Disable/Enable fullscreen rendering mode.\n");
+#endif
 printf(" -[no]throttle        : Disable/Enable throttle to a max of 60FPS.\n");
 printf(" -[no]sound           : Disable/Enable sound support.\n");
 printf(" -[no]autoskip        : Disable/Enable auto-frameskip\n");

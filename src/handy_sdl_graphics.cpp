@@ -203,6 +203,7 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     rendering. It just goes back in windowed mode or displays it in the window res.
 */
 #ifdef DINGUX
+    // ignore fullscreen for dingux
 #elif defined(HANDY_SDL_WIN32)
     if (fullscreen)
     {
@@ -571,11 +572,11 @@ void UpscaleBresenham(Uint16 *src,
         source = dh * src_w;
         
         for(j = 0; j < dst_w; j++) {
-            Uint16 c;
+            Uint32 c;
             
             c = src[source];
             
-            #define AVERAGE(z, x) ((((z) & 0xF7DE) >> 1) + (((x) & 0xF7DE) >> 1))
+            #define AVERAGE(z, x) ((((z) & 0xF7DEF7DE) >> 1) + (((x) & 0xF7DEF7DE) >> 1))
             
             if((Ew >= midw) && (Eh >= midh)) {
                 c = AVERAGE(src[source+1], src[source+src_w]);
