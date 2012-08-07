@@ -73,8 +73,8 @@
     #define BT_UP       SDLK_UP
     #define BT_DOWN     SDLK_DOWN
     #define BT_PAUSE    SDLK_RETURN      // START
-    #define BT_A        SDLK_LALT        // B
-    #define BT_B        SDLK_LCTRL       // A
+    #define BT_A        SDLK_LCTRL       // A
+    #define BT_B        SDLK_LALT        // B
     #define BT_OPT1     SDLK_LSHIFT      // Y
     #define BT_OPT2     SDLK_SPACE       // X
     #define BT_OFF      SDLK_ESCAPE      // SELECT
@@ -84,8 +84,8 @@
     #define BT_UP       SDLK_UP
     #define BT_DOWN     SDLK_DOWN
     #define BT_PAUSE    SDLK_RETURN
-    #define BT_A        SDLK_x
-    #define BT_B        SDLK_z
+    #define BT_A        SDLK_z
+    #define BT_B        SDLK_x
     #define BT_OPT1     SDLK_F1
     #define BT_OPT2     SDLK_F2
     #define BT_OFF      SDLK_ESCAPE
