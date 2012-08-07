@@ -129,8 +129,6 @@ void handy_sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 int handy_sdl_audio_init(void)
 {
     SDL_AudioSpec     *desired;
-    SDL_AudioSpec    *obtained;
-    SDL_AudioSpec     *hardware_spec;
 
 #ifdef HANDY_SDL_DEBUG
     printf("handy_sdl_audio_init - DEBUG\n");
@@ -142,9 +140,6 @@ int handy_sdl_audio_init(void)
     /* Allocate a desired SDL_AudioSpec */
     desired = (SDL_AudioSpec *)malloc(sizeof(SDL_AudioSpec));
 
-    /* Allocate space for the obtained SDL_AudioSpec */
-    obtained = (SDL_AudioSpec *)malloc(sizeof(SDL_AudioSpec));
-
     /* Define our desired SDL audio output */
     desired->format     = AUDIO_U8;                  // Unsigned 8-bit
     desired->channels   = 2;                         // Pseudo stereo
@@ -154,13 +149,12 @@ int handy_sdl_audio_init(void)
     desired->userdata   = NULL;                      // N/A
 
     /* Check if we can get our desired SDL audio output */
-    if(SDL_OpenAudio(desired, obtained) < 0) {
+    if(SDL_OpenAudio(desired, NULL) < 0) {
         fprintf(stderr, "ERROR : Couldn't open audio: %s\n", SDL_GetError());
         return 0;  
     }
 
     free(desired);
-    hardware_spec=obtained;
     
     /* Enable SDL audio */
       SDL_PauseAudio(0);
