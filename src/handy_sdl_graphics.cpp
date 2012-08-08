@@ -517,7 +517,6 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
 #ifdef DINGUX
     Uint8 *dst_offset = (Uint8 *)dst->pixels + (dst->w - 320) + (dst->h - 204) * dst->w;
 
-    if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
     switch( filter ) {
         case 0: break;
         case 1: TVMode((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
@@ -531,7 +530,6 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
         case 9: Pixelate((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
         case 10: Average((Uint8 *)src->pixels, src->pitch, delta, dst_offset, dst->pitch, src->w, src->h); break;
     }
-    if (SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
 #else
     switch( filter ) {
         case 0: break;
@@ -549,7 +547,8 @@ inline void handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface 
 #endif
 }
 
-/* Bresenham's upscale routine */
+#if 0
+/* Bresenham's upscale routine - SLOW!!! */
 void UpscaleBresenham(Uint16 *src, 
                       Uint32 src_pitch,
                       Uint32 src_w, 
@@ -569,8 +568,8 @@ void UpscaleBresenham(Uint16 *src,
     
     for(i = 0; i < dst_h; i++) {
         Ew = 0;
-        source = dh * src_w;
-        
+        source = dh * src_w;    
+
         for(j = 0; j < dst_w; j++) {
             Uint32 c;
             
@@ -597,7 +596,177 @@ void UpscaleBresenham(Uint16 *src,
         Eh += src_h; if(Eh >= dst_h) { Eh -= dst_h; dh++; }
     }
 }
+#else
 
+/*
+    Upscale 160x102 -> 320x240
+    Horizontal upscale:
+        320/160=2  --  simple doubling of pixels
+        [ab][cd] -> [aa][bb][cc][dd]
+    Vertical upscale:
+        Bresenham algo with simple interpolation
+*/
+void upscale_320x240(Uint32 *src, Uint32 *dst)
+{
+    int midh = 240 / 2 * 3 / 2;
+    int Eh = 0;
+    int source = 0;
+    int dh = 0;
+    int i, j;
+
+    for (i = 0; i < 240; i++)
+    {
+        source = dh * 160 / 2; // atari lynx x / 2 
+
+        for (j = 0; j < 320/8; j++)
+        {
+            Uint32 a, b, c, d, ab, cd;
+
+            __builtin_prefetch(dst + 4, 1);
+            __builtin_prefetch(src + source + 4, 0);
+
+            ab = src[source] & 0xF7DEF7DE;
+            cd = src[source + 1] & 0xF7DEF7DE;
+
+            #define AVERAGE(z, x) ((((z) & 0xF7DEF7DE) >> 1) + (((x) & 0xF7DEF7DE) >> 1))
+            if(Eh >= midh) { // average + 160
+                ab = AVERAGE(ab, src[source+160/2]);
+                cd = AVERAGE(cd, src[source+160/2+1]);
+            }
+            #undef AVERAGE
+
+            a = (ab & 0xFFFF) | (ab << 16);
+            b = (ab & 0xFFFF0000) | (ab >> 16);
+            c = (cd & 0xFFFF) | (cd << 16);
+            d = (cd & 0xFFFF0000) | (cd >> 16);
+
+            *dst++ = a;
+            *dst++ = b;
+            *dst++ = c;
+            *dst++ = d;
+
+            source += 2;
+
+        }
+        Eh += 102; if(Eh >= 240) { Eh -= 240; dh++; } // 102 - real atari lynx y size
+    }
+}
+
+/*
+    Upscale 160x102 -> 400x240
+    Horizontal upscale:
+        400/160=2.5  --  do some horizontal interpolation
+        [ab][cd] -> [aa][(ab)b][bc][c(cd)][dd]
+    Vertical upscale:
+        Bresenham algo with simple interpolation
+*/
+void upscale_400x240(Uint32 *src, Uint32 *dst)
+{
+    int midh = 240 / 2 * 3 / 2;
+    int Eh = 0;
+    int source = 0;
+    int dh = 0;
+    int i, j;
+
+    for (i = 0; i < 240; i++)
+    {
+        source = dh * 160 / 2; // atari lynx x / 2 
+
+        for (j = 0; j < 400/10; j++)
+        {
+            Uint32 a, b, c, d, e, ab, cd;
+
+            __builtin_prefetch(dst + 4, 1);
+            __builtin_prefetch(src + source + 4, 0);
+
+            ab = src[source] & 0xF7DEF7DE;
+            cd = src[source + 1] & 0xF7DEF7DE;
+
+            #define AVERAGE(z, x) ((((z) & 0xF7DEF7DE) >> 1) + (((x) & 0xF7DEF7DE) >> 1))
+            if(Eh >= midh) { // average + 160
+                ab = AVERAGE(ab, src[source+160/2]) & 0xF7DEF7DE; // to prevent overflow
+                cd = AVERAGE(cd, src[source+160/2+1]) & 0xF7DEF7DE; // to prevent overflow
+            }
+            #undef AVERAGE
+
+            a = (ab & 0xFFFF) | (ab << 16);
+            b = (((ab & 0xFFFF) >> 1) + ((ab & 0xFFFF0000) >> 17)) | (ab & 0xFFFF0000);
+            c = (ab >> 16) | (cd << 16);
+            d = (cd & 0xFFFF) | (((cd & 0xFFFF) << 15) + ((cd & 0xFFFF0000) >> 1));
+            e = (cd >> 16) | (cd & 0xFFFF0000);
+
+            *dst++ = a;
+            *dst++ = b;
+            *dst++ = c;
+            *dst++ = d;
+            *dst++ = e;
+
+            source += 2;
+
+        }
+        Eh += 102; if(Eh >= 240) { Eh -= 240; dh++; } // 102 - real atari lynx y size
+    }
+}
+
+/*
+    Upscale 160x102 -> 480x272
+    Horizontal upscale
+        480/160=3  --  simple tripling of pixels
+        [ab][cd] -> [aa][ab][bb][cc][cd][dd]
+    Vertical upscale:
+        Bresenham algo with simple interpolation
+*/
+void upscale_480x272(Uint32 *src, Uint32 *dst)
+{
+    int midh = 272 / 2 * 3 / 2;
+    int Eh = 0;
+    int source = 0;
+    int dh = 0;
+    int i, j;
+
+    for (i = 0; i < 272; i++)
+    {
+        source = dh * 160 / 2; // atari lynx x / 2 
+
+        for (j = 0; j < 480/12; j++)
+        {
+            Uint32 a, b, c, d, e, f, ab, cd;
+
+            __builtin_prefetch(dst + 4, 1);
+            __builtin_prefetch(src + source + 4, 0);
+
+            ab = src[source] & 0xF7DEF7DE;
+            cd = src[source + 1] & 0xF7DEF7DE;
+
+            #define AVERAGE(z, x) ((((z) & 0xF7DEF7DE) >> 1) + (((x) & 0xF7DEF7DE) >> 1))
+            if(Eh >= midh) { // average + 160
+                ab = AVERAGE(ab, src[source+160/2]);
+                cd = AVERAGE(cd, src[source+160/2+1]);
+            }
+            #undef AVERAGE
+
+            a = (ab & 0xFFFF) | (ab << 16);
+            b = ab;
+            c = (ab & 0xFFFF0000) | (ab >> 16);
+            d = (cd & 0xFFFF) | (cd << 16);
+            e = cd;
+            f = (cd & 0xFFFF0000) | (cd >> 16);
+
+            *dst++ = a;
+            *dst++ = b;
+            *dst++ = c;
+            *dst++ = d;
+            *dst++ = e;
+            *dst++ = f;
+
+            source += 2;
+
+        }
+        Eh += 102; if(Eh >= 272) { Eh -= 272; dh++; } // 102 - real atari lynx y size
+    }
+}
+
+#endif
 inline void handy_sdl_draw_graphics(void)
 {
 
@@ -616,15 +785,27 @@ inline void handy_sdl_draw_graphics(void)
 #ifndef DINGUX
             SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
 #else
-            UpscaleBresenham((Uint16 *)HandyBuffer->pixels, 
+            if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
+            switch(mainSurface->w) {
+                case 320:
+                    upscale_320x240((Uint32 *)HandyBuffer->pixels, (Uint32 *)mainSurface->pixels);
+                    break;
+                case 400:
+                    upscale_400x240((Uint32 *)HandyBuffer->pixels, (Uint32 *)mainSurface->pixels);
+                    break;
+                case 480:
+                    upscale_480x272((Uint32 *)HandyBuffer->pixels, (Uint32 *)mainSurface->pixels);
+                    break;
+            }
+            if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
+            /*UpscaleBresenham((Uint16 *)HandyBuffer->pixels, 
                                             HandyBuffer->pitch, 
                                             160,
                                             102,
                                             (Uint16 *)mainSurface->pixels, 
                                             mainSurface->pitch, 
                                             mainSurface->w, 
-                                            mainSurface->h);
-            //SDL_SoftStretch( HandyBuffer, NULL, mainSurface, NULL );
+                                            mainSurface->h);*/
 #endif
 #endif
         }
