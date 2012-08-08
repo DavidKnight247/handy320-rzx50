@@ -518,7 +518,12 @@ int main(int argc, char *argv[])
                     break;
                 case SDL_KEYDOWN:
                     if(handy_sdl_event.key.keysym.sym == SDLK_BACKSPACE) {
-                        filter = (filter + 1) % 10;
+                        //filter = (filter + 1) % 11;
+                        if(filter != 6) filter = 6; else filter = 0;
+                        SDL_FillRect(mainSurface,NULL,SDL_MapRGBA(mainSurface->format, 0, 0, 0, 255));
+                        SDL_Flip(mainSurface);
+                        SDL_FillRect(mainSurface,NULL,SDL_MapRGBA(mainSurface->format, 0, 0, 0, 255));
+                        SDL_Flip(mainSurface);
                         break;
                     }
                     KeyMask = handy_sdl_on_key_down(handy_sdl_event.key, KeyMask);
@@ -540,10 +545,18 @@ int main(int argc, char *argv[])
         {
             if(!gSystemHalt)
             {
+                extern SDL_mutex *sound_mutex;
+                extern SDL_cond *sound_cv;
+                
+                // synchronize by sound samples
+                SDL_LockMutex(sound_mutex);
                 for(ULONG loop=1024;loop;loop--)
                 {
+                    if(Throttle) while(gAudioBufferPointer >= HANDY_AUDIO_BUFFER_SIZE*3/4) SDL_CondWait(sound_cv, sound_mutex);
                     mpLynx->Update();
                 }
+                SDL_CondSignal(sound_cv);
+                SDL_UnlockMutex(sound_mutex);
             }
             else
             {
@@ -554,6 +567,7 @@ int main(int argc, char *argv[])
             }
         }
 
+
         handy_sdl_this_time = SDL_GetTicks();
 
         fps_counter = (((float)gTimerCount/(handy_sdl_this_time-handy_sdl_start_time))*1000.0);
@@ -561,7 +575,7 @@ int main(int argc, char *argv[])
         printf("fps_counter : %f\n", fps_counter);
 #endif
 
-        if( (Throttle) && (fps_counter > 59.99) ) SDL_Delay( (Uint32)fps_counter );
+        //if( (Throttle) && (fps_counter > 59.99) ) SDL_Delay( (Uint32)fps_counter );
 
         if(Autoskip)
         {

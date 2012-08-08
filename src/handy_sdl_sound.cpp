@@ -65,6 +65,9 @@
 #include "handy_sdl_main.h"
 #include "handy_sdl_sound.h"
 
+SDL_mutex *sound_mutex;
+SDL_cond *sound_cv;
+
 /*  
     Name                :   handy_sdl_audio_callback
     Parameters          :   userdata (NULL, not used)
@@ -95,7 +98,9 @@ void handy_sdl_audio_callback(void *userdata, Uint8 *stream, int len)
     printf("gAudioBufferPointer : %d - len : %d\n", gAudioBufferPointer, len);
 #endif
 
-    // expand to pseudo-stereo because rzx50/a380 dingux doesn't support it
+    SDL_LockMutex(sound_mutex);
+
+    // expand to pseudo-stereo because rzx50/a380 dingux doesn't support mono
     if( ( (int)gAudioBufferPointer >= (len/2)) && (gAudioBufferPointer != 0) && (!gSystemHalt) ) {
         while(length) {
             Uint16 sample = *src++;
@@ -106,7 +111,8 @@ void handy_sdl_audio_callback(void *userdata, Uint8 *stream, int len)
         memmove(gAudioBuffer, gAudioBuffer+(len/2), gAudioBufferPointer - (len/2));
         gAudioBufferPointer = gAudioBufferPointer - (len/2);
     }
-
+    SDL_CondSignal(sound_cv);
+    SDL_UnlockMutex(sound_mutex);
 }
 
 /*  
@@ -144,7 +150,7 @@ int handy_sdl_audio_init(void)
     desired->format     = AUDIO_U8;                  // Unsigned 8-bit
     desired->channels   = 2;                         // Pseudo stereo
     desired->freq       = HANDY_AUDIO_SAMPLE_FREQ;   // Freq : 22050 
-    desired->samples    = 512;                       // Samples (power of two)
+    desired->samples    = 256;                       // Samples (power of two)
     desired->callback   = handy_sdl_audio_callback;  // Our audio callback
     desired->userdata   = NULL;                      // N/A
 
@@ -155,9 +161,12 @@ int handy_sdl_audio_init(void)
     }
 
     free(desired);
+
+    sound_mutex = SDL_CreateMutex();
+    sound_cv = SDL_CreateCond();
     
     /* Enable SDL audio */
-      SDL_PauseAudio(0);
+    SDL_PauseAudio(0);
     
     return 1;
 }

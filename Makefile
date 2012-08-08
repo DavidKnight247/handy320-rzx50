@@ -37,10 +37,8 @@ CFLAGS   = -DDINGUX -MMD -Wall -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-mat
 CPPFLAGS = -DDINGUX -MMD -Wall -O2 -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
 else
 ifeq "$(OSTYPE)" "dingux"
-CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -fomit-frame-pointer -fsigned-char -ffast-math -G0 -mno-mips16 -pipe \
-	-falign-functions -falign-loops -falign-labels -falign-jumps -fexpensive-optimizations \
-	-fsingle-precision-constant -finline -finline-functions -fstrict-aliasing \
-	-fno-strength-reduce -funsafe-math-optimizations -mbranch-likely -funroll-loops -DANSI_GCC -DSDL_PATCH 
+CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math \
+	-falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common -DANSI_GCC -DSDL_PATCH 
 CPPFLAGS = $(CFLAGS)
 endif
 endif

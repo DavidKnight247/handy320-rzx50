@@ -764,7 +764,9 @@ inline void handy_sdl_draw_graphics(void)
 
     if( filter >= 1 )
     {
+        if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
         handy_sdl_draw_filter(filter, HandyBuffer, mainSurface, delta);
+        if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
     }
     else
     {

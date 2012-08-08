@@ -65,7 +65,7 @@
  
 //#include "handy_sdl_main.h"
 
-int 	handy_sdl_audio_init(void);
-void 	handy_sdl_audio_callback(void *userdata, Uint8 *stream, int len);
+int handy_sdl_audio_init(void);
+void handy_sdl_audio_callback(void *userdata, Uint8 *stream, int len);
 
 #endif
