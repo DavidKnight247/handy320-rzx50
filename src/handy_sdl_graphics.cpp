@@ -67,8 +67,8 @@
 #ifndef DINGUX
 #include "sdlemu/sdlemu_opengl.h"
 #include "sdlemu/sdlemu_overlay.h"
-#endif
 #include "sdlemu/sdlemu_video.h"
+#endif
 #include "sdlemu/sdlemu_filter.h"
 
 
@@ -771,12 +771,7 @@ inline void handy_sdl_draw_graphics(void)
 
         if (LynxScale == 1)
         {
-#ifdef SDL_MEMCPY
-            memcpy(mainSurface->pixels, HandyBuffer->pixels, LynxWidth * LynxHeight* bpp);
-#else
-#ifndef DINGUX
-            SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
-#else
+#ifdef DINGUX
             if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
             switch(mainSurface->w) {
                 case 320:
@@ -798,7 +793,11 @@ inline void handy_sdl_draw_graphics(void)
                                             mainSurface->pitch, 
                                             mainSurface->w, 
                                             mainSurface->h);*/
-#endif
+#else
+#ifdef SDL_MEMCPY
+            memcpy(mainSurface->pixels, HandyBuffer->pixels, LynxWidth * LynxHeight* bpp);
+#else
+            SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
 #endif
         }
         else
@@ -822,10 +821,12 @@ inline void handy_sdl_draw_graphics(void)
                     break;
 
             }
+#endif
         }
     }
 }
 
+#ifndef DINGUX
 inline void handy_sdl_scale(void)
 {
     Uint8             bpp;
@@ -936,7 +937,7 @@ inline void handy_sdl_scale(void)
     if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface (mainSurface);
 
 }
-
+#endif
 /*
     Name                :     handy_sdl_video_close
     Parameters          :     N/A

@@ -52,7 +52,7 @@ LDFLAGS = -mconsole
 LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lSDLmain -lmingw32 -lz
 else
 ifeq "$(OSTYPE)" "dingux"
-LDFLAGS = -lstdc++
+LDFLAGS =
 #LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lz
 LIBS = -lstdc++ -lSDL -lz
 endif
@@ -72,7 +72,6 @@ OBJS = \
 		obj/errorhandler.o \
 		obj/unzip.o \
 		obj/sdlemu_filter.o \
-		obj/sdlemu_video.o \
 		obj/handy_sdl_main.o \
 		obj/handy_sdl_handling.o \
 		obj/handy_sdl_graphics.o \

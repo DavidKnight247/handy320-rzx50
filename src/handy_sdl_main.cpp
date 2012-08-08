@@ -345,8 +345,8 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[i], "-nothrottle"))     Throttle = 0;
         if (!strcmp(argv[i], "-autoskip"))     Autoskip = 1;
         if (!strcmp(argv[i], "-noautoskip"))     Autoskip = 0;
-        if (!strcmp(argv[i], "-fps"))             framecounter = 1;
-        if (!strcmp(argv[i], "-nofps"))         framecounter = 0;
+        if (!strcmp(argv[i], "-fps"))             framecounter = 1; // MAYBE REMOVE LATER
+        if (!strcmp(argv[i], "-nofps"))         framecounter = 0; // MAYBE REMOVE LATER
         if (!strcmp(argv[i], "-sound"))         gAudioEnabled = TRUE;
         if (!strcmp(argv[i], "-nosound"))         gAudioEnabled = FALSE;
 #ifndef DINGUX
@@ -358,12 +358,12 @@ int main(int argc, char *argv[])
         if (!strcmp(argv[i], "-noaccel"))        accel = 0;
         if (!strcmp(argv[i], "-sync"))            sync = 1;
         if (!strcmp(argv[i], "-nosync"))        sync = 0;
-#endif
         if (!strcmp(argv[i], "-2")) LynxScale = 2;
         if (!strcmp(argv[i], "-3")) LynxScale = 3;
         if (!strcmp(argv[i], "-4")) LynxScale = 4;
         if (!strcmp(argv[i], "-lcd")) LynxLCD = 1;
         if (!strcmp(argv[i], "-nolcd")) LynxLCD = 0;
+#endif
         if (!strcmp(argv[i], "-frameskip"))
         {
             frameskip = atoi(argv[++i]);
@@ -387,7 +387,6 @@ int main(int argc, char *argv[])
                 rendertype = 1;
             }
         }
-#endif
         if (!strcmp(argv[i], "-stype"))
         {
             stype = atoi(argv[++i]);
@@ -396,7 +395,7 @@ int main(int argc, char *argv[])
                 stype = 1;
             }
         }
-
+#endif
         if (!strcmp(argv[i], "-filter"))
         {
             filter = atoi(argv[++i]);
