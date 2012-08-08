@@ -248,18 +248,12 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     //
     // All the rendering is done in the graphics buffer and is then
     // blitted to the mainSurface and thus to the screen.
+
     HandyBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
         LynxWidth,
         LynxHeight,
         sdl_bpp_flag,
         0x00000000, 0x00000000, 0x00000000, 0x00000000);
-/*
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-         0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
-#else
-         0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
-#endif
-*/
 
     if (HandyBuffer == NULL)
     {
@@ -461,8 +455,8 @@ void handy_sdl_video_init(int bpp)
             break;
     }
 
-    mpLynxBuffer = (Uint32 *)malloc(LynxWidth*LynxHeight*sizeof(Uint32)*4);
-    //memset(HandyBuffer->pixels, 0, HandyBuffer->pitch * HandyBuffer->h);
+    // HandyBuffer must be initialized previously
+    mpLynxBuffer = (Uint32 *)HandyBuffer->pixels;
     mpLynx->DisplaySetAttributes( LynxRotate, LynxFormat, (ULONG)HandyBuffer->pitch, handy_sdl_display_callback, (ULONG)mpLynxBuffer);
 
     printf("[DONE]\n");
@@ -485,8 +479,6 @@ UBYTE *handy_sdl_display_callback(ULONG objref)
 
 
     // Time to render the contents of mLynxBuffer to the SDL gfxBuffer.
-    handy_sdl_render_buffer();
-
     // Now to blit the contents of gfxBuffer to our main SDL surface.
 #ifdef DINGUX
     handy_sdl_draw_graphics();
@@ -846,7 +838,6 @@ inline void handy_sdl_scale(void)
 
     // SLOW !!!
     if (SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
-        //while (SDL_LockSurface(mainSurface) < 0) SDL_Delay(10);
 
     increment = LynxScale*(LynxScale-1)*LynxWidth;
     copysize = increment*bpp;
@@ -943,32 +934,6 @@ inline void handy_sdl_scale(void)
     }
 
     if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface (mainSurface);
-
-}
-
-/*
-    Name                :     handy_sdl_render_buffer
-    Parameters          :     N/A
-    Function            :   Handy/SDL bufferdisplay rendering function.
-
-    Uses                :   mpLynxBuffer ( Handy core rendering buffer )
-                            HandyBuffer  ( Handy/SDL buffer display )
-
-    Information            :    Renders the graphics from HandyBuffer to
-                            the main surface.
-*/
-void handy_sdl_render_buffer(void)
-{
-    Uint8             bpp;
-
-    bpp = HandyBuffer->format->BytesPerPixel;
-
-    if (SDL_MUSTLOCK(HandyBuffer)) SDL_LockSurface(HandyBuffer);
-        //while(SDL_LockSurface(HandyBuffer) < 0) SDL_Delay(10);
-
-    memcpy(HandyBuffer->pixels, mpLynxBuffer, LynxWidth * LynxHeight* bpp);
-
-    if(SDL_MUSTLOCK(HandyBuffer)) SDL_UnlockSurface(HandyBuffer);
 
 }
 
