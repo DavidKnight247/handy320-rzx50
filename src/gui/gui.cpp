@@ -684,12 +684,20 @@ void gui_Init()
 void gui_Run()
 {
 	extern int filter; // remove later, temporal hack
+	extern int BT_A, BT_B; // remove later, temporal hack
 
 	SDL_EnableKeyRepeat(/*SDL_DEFAULT_REPEAT_DELAY*/ 150, /*SDL_DEFAULT_REPEAT_INTERVAL*/30);
 	gui_ClearScreen();
 	gui_ImageScaling = (filter == 6 ? 0 : 1); // remove later, temporal hack
 	gui_MainMenuRun(&gui_MainMenu);
 	filter = (gui_ImageScaling == 0 ? 6 : 0); // remove later, temporal hack
+	if(gui_SwapAB == 0) {
+		BT_A = SDLK_LCTRL;
+		BT_B = SDLK_LALT;
+	} else {
+		BT_A = SDLK_LALT;
+		BT_B = SDLK_LCTRL;
+	}
 	gui_ClearScreen();
 	SDL_EnableKeyRepeat(0, 0);
 }

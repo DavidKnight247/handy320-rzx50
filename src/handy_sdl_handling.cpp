@@ -68,13 +68,16 @@
 
 // map keys differently for dingux
 #ifdef DINGUX
+int BT_A = SDLK_LCTRL;
+int BT_B = SDLK_LALT;
+
     #define BT_LEFT     SDLK_LEFT
     #define BT_RIGHT    SDLK_RIGHT
     #define BT_UP       SDLK_UP
     #define BT_DOWN     SDLK_DOWN
     #define BT_PAUSE    SDLK_RETURN      // START
-    #define BT_A        SDLK_LCTRL       // A
-    #define BT_B        SDLK_LALT        // B
+    //#define BT_A        SDLK_LCTRL       // A
+    //#define BT_B        SDLK_LALT        // B
     #define BT_OPT1     SDLK_LSHIFT      // Y
     #define BT_OPT2     SDLK_SPACE       // X
     #define BT_OFF      SDLK_ESCAPE      // SELECT
@@ -102,6 +105,9 @@ int  handy_sdl_on_key_down(SDL_KeyboardEvent key, int mask)
     }
 */  
 
+    if(key.keysym.sym == BT_B) return mask |= BUTTON_B;
+    if(key.keysym.sym == BT_A) return mask |= BUTTON_A;
+
     switch(key.keysym.sym) {
         case BT_LEFT: {  // Lynx LEFT
             mask|=BUTTON_LEFT;
@@ -127,15 +133,15 @@ int  handy_sdl_on_key_down(SDL_KeyboardEvent key, int mask)
             break;
         }
 
-        case BT_B: { // Lynx B
-            mask|=BUTTON_B;
-            break;
-        }
+        //case BT_B: { // Lynx B
+        //    mask|=BUTTON_B;
+        //    break;
+        //}
 
-        case BT_A: { // Lynx A
-            mask|=BUTTON_A; 
-            break;
-        }
+        //case BT_A: { // Lynx A
+        //    mask|=BUTTON_A; 
+        //    break;
+        //}
 
         case BT_OPT1: { // Lynx Option 1
             mask|=BUTTON_OPT1;
@@ -203,6 +209,8 @@ int  handy_sdl_on_key_up(SDL_KeyboardEvent key, int mask)
         y_move = SDL_JoystickGetAxis(joystick, 1);
     }
 */  
+    if(key.keysym.sym == BT_B) return mask &= ~BUTTON_B;
+    if(key.keysym.sym == BT_A) return mask &= ~BUTTON_A;
 
     switch(key.keysym.sym)
     {
@@ -230,15 +238,15 @@ int  handy_sdl_on_key_up(SDL_KeyboardEvent key, int mask)
             break;
         }
         
-        case BT_B: { // Lynx B
-            mask&= ~BUTTON_B;
-            break;
-        }
+        //case BT_B: { // Lynx B
+        //    mask&= ~BUTTON_B;
+        //    break;
+        //}
         
-        case BT_A: { // Lynx A
-           mask&= ~BUTTON_A; 
-           break;
-        }
+        //case BT_A: { // Lynx A
+        //   mask&= ~BUTTON_A; 
+        //   break;
+        //}
         
         case BT_OPT1: {// Lynx Option1
             mask&= ~BUTTON_OPT1;
