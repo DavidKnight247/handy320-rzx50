@@ -70,8 +70,41 @@
 #include "sdlemu/sdlemu_video.h"
 #endif
 #include "sdlemu/sdlemu_filter.h"
+#include "gui/gui.h"
 
+/*
+    This is called also from gui when initializing for rom browser
+*/
+int handy_sdl_video_early_setup(int surfacewidth, int surfaceheight, int sdl_bpp_flag, int videoflags)
+{
+    // Setup the main SDL surface
+#ifdef DINGUX
+    {
+        uint32 vm = 0; // 0 - 320x240, 1 - 400x240, 2 - 480x272
 
+        #define NUMOFVIDEOMODES 3
+        struct { uint32 x; uint32 y; } VModes[NUMOFVIDEOMODES] = { {320, 240}, {400, 240}, {480, 272} };
+
+        // check 3 videomodes: 480x272, 400x240, 320x240
+        for(vm = NUMOFVIDEOMODES-1; vm >= 0; vm--) {
+            if(SDL_VideoModeOK(VModes[vm].x, VModes[vm].y, 16, videoflags) != 0) {
+                surfacewidth = VModes[vm].x;
+                surfaceheight = VModes[vm].y;
+                break;
+            }
+        }
+    }
+
+#endif
+    mainSurface = SDL_SetVideoMode(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
+
+    if (mainSurface == NULL)
+    {
+        printf("Could not create primary SDL surface: %s\n", SDL_GetError());
+        return 0;
+    }
+    return 1;
+}
 
 /*
     Name                :     handy_sdl_video_setup
@@ -217,32 +250,8 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
         videoflags |= SDL_FULLSCREEN;
 #endif
 
-    // Setup the main SDL surface
-#ifdef DINGUX
-    {
-        uint32 vm = 0; // 0 - 320x240, 1 - 400x240, 2 - 480x272
-
-        #define NUMOFVIDEOMODES 3
-        struct { uint32 x; uint32 y; } VModes[NUMOFVIDEOMODES] = { {320, 240}, {400, 240}, {480, 272} };
-
-        // check 3 videomodes: 480x272, 400x240, 320x240
-        for(vm = NUMOFVIDEOMODES-1; vm >= 0; vm--) {
-            if(SDL_VideoModeOK(VModes[vm].x, VModes[vm].y, 16, videoflags) != 0) {
-                surfacewidth = VModes[vm].x;
-                surfaceheight = VModes[vm].y;
-                break;
-            }
-        }
-    }
-
-#endif
-    mainSurface = SDL_SetVideoMode(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
-
-    if (mainSurface == NULL)
-    {
-        printf("Could not create primary SDL surface: %s\n", SDL_GetError());
-        return 0;
-    }
+    // setup SDL video mode
+    handy_sdl_video_early_setup(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
 
     // Setup the Handy Graphics Buffer.
     //
@@ -429,6 +438,7 @@ int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
     Information            :    Creates the backbuffer for the Handy core based
                             upon rotation, format, etc.
 */
+UBYTE *handy_sdl_display_fake_callback(ULONG objref);
 void handy_sdl_video_init(int bpp)
 {
 
@@ -473,6 +483,11 @@ void handy_sdl_video_init(int bpp)
     Information            :    Renders the graphics from HandyBuffer to
                             the main surface.
 */
+UBYTE *handy_sdl_display_fake_callback(ULONG objref)
+{
+    return (UBYTE *)mpLynxBuffer;
+}
+
 UBYTE *handy_sdl_display_callback(ULONG objref)
 {
     int filter =  1;
@@ -482,6 +497,9 @@ UBYTE *handy_sdl_display_callback(ULONG objref)
     // Now to blit the contents of gfxBuffer to our main SDL surface.
 #ifdef DINGUX
     handy_sdl_draw_graphics();
+    
+    // show fps if needed
+    gui_ShowFPS();
     SDL_Flip( mainSurface );
 #else
     switch( rendertype )

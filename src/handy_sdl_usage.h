@@ -15,8 +15,8 @@ printf(" -[no]fullscreen      : Disable/Enable fullscreen rendering mode.\n");
 #endif
 printf(" -[no]throttle        : Disable/Enable throttle to a max of 60FPS.\n");
 printf(" -[no]sound           : Disable/Enable sound support.\n");
-printf(" -[no]autoskip        : Disable/Enable auto-frameskip\n");
 #ifndef DINGUX
+printf(" -[no]autoskip        : Disable/Enable auto-frameskip\n");
 printf("\n");
 printf(" SDL Rendering options:\n");
 printf("\n");
@@ -32,13 +32,11 @@ printf("\n");
 printf(" Additional Rendering Filters (only for SDL Rendering):\n");
 printf(" WARNING! These filters are forced to work with -bpp 16 and with (scale) -2\n");
 printf("\n");
-#endif
 printf(" -filter 1 - 10       : Enable the SDL enhancement/effect filter\n");
 printf("                         1 = TV Mode,    2 = 2xSAI,        3 = Super2xSAI, \n");
 printf("                         4 = SuperEagle, 5 = MotionBlur,   6 = Simple2x, \n");
 printf("                         7 = Bilinear,   8 = BilinearPlus, 9 = Pixelate, \n");
 printf("                        10 = Average\n");
-#ifndef DINGUX
 printf("\n");
 printf(" OpenGL Rendering options:\n");
 printf("\n");

@@ -26,6 +26,8 @@ MSG = Dingux
 
 CC = mipsel-linux-uclibc-gcc
 LD = mipsel-linux-uclibc-gcc
+#CC = /opt/opendingux-toolchain/usr/bin/mipsel-linux-gcc
+#LD = /opt/opendingux-toolchain/usr/bin/mipsel-linux-gcc
 endif
 endif
 
@@ -37,7 +39,7 @@ CFLAGS   = -DDINGUX -MMD -Wall -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-mat
 CPPFLAGS = -DDINGUX -MMD -Wall -O2 -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
 else
 ifeq "$(OSTYPE)" "dingux"
-CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math \
+CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math -msoft-float \
 	-falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common -DANSI_GCC -DSDL_PATCH 
 CPPFLAGS = $(CFLAGS)
 endif
@@ -73,7 +75,9 @@ OBJS = \
 		obj/handy_sdl_main.o \
 		obj/handy_sdl_handling.o \
 		obj/handy_sdl_graphics.o \
-		obj/handy_sdl_sound.o
+		obj/handy_sdl_sound.o \
+		obj/gui.o \
+		obj/font.o
 
 all: obj $(TARGET)$(EXESUFFIX)
 	@echo "*** Looks like it compiled OK... Give it a whirl!"
@@ -87,9 +91,9 @@ clean:
 obj:
 	@mkdir obj
 
-obj/%.o: src/handy-0.95/%.c
+obj/%.o: src/gui/%.cpp
 	@echo "*** Compiling $<..."
-	$(CC) $(CFLAGS) $(INCS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(INCS) -c $< -o $@
 
 obj/%.o: src/handy-0.95/%.cpp
 	@echo "*** Compiling $<..."

@@ -59,6 +59,8 @@
 #include <cstring>
 #include <ctime>
 #include <cctype>
+#include <unistd.h>
+#include <dirent.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_main.h>
 #include <SDL/SDL_timer.h>
@@ -68,7 +70,9 @@
 #include "handy_sdl_handling.h"
 #include "handy_sdl_sound.h"
 #include "handy_sdl_usage.h"
-//#include "sdlemu/sdlemu_opengl.h"
+#ifdef DINGUX
+#include "gui/gui.h"
+#endif
 
 /* SDL declarations */
 SDL_Surface        *HandyBuffer;             // Our Handy/SDL display buffer
@@ -300,31 +304,84 @@ void handy_sdl_quit(void)
 
 }
 
+char bios_path_and_name[512]; // full path of lynxboot.img
+char rom_name_with_no_ext[128]; // rom name with no extension, used for savestates
+
+void handy_sdl_core_init(char *romname)
+{
+    int i;
+
+    // strip rom name from full path and cut off the extension
+    for(i = strlen(romname) - 1; i >= 0; i--) {
+        if(romname[i] == '/' || i == 0) { 
+            memcpy((void *)rom_name_with_no_ext, (void *)(romname + i + (i?1:0)), strlen(romname) - i);
+            rom_name_with_no_ext[strlen(rom_name_with_no_ext)-4] = 0; // cut off extension.
+            break;
+        }
+    }
+    
+    // DEBUG
+    //printf("Naked name: %s\n", (char *)&rom_name_with_no_ext);
+
+    printf("Initialising Handy Core...    ");
+    try {
+        mpLynx = new CSystem(romname, bios_path_and_name);
+    } catch (CLynxException &err) {
+        cerr << err.mMsg.str() << ": " << err.mDesc.str() << endl;
+        exit(EXIT_FAILURE);
+    }
+    printf("[DONE]\n\n");
+
+    // DEBUG
+    //printf("Rom full path: %s\n", romname);
+    //printf("Bios full path: %s\n", bios_path_and_name);
+
+    // Query Rom Image information
+    handy_sdl_rom_info();
+}
+
+/*
+    Reinit routine used to reload roms on the fly
+*/
+void handy_sdl_core_reinit(char *romname)
+{
+    delete mpLynx;
+    handy_sdl_core_init(romname);
+    handy_sdl_video_init(mpBpp);
+}
+
 #undef main // necessary for win32 compile
+
+int Throttle = 1;  // Throttle to 60FPS
 
 int main(int argc, char *argv[])
 {
-    int         i;
-    int            frameskip              = 0;   // Frameskip
-    SDL_Event    handy_sdl_event;
-    Uint32      handy_sdl_start_time;
-    Uint32      handy_sdl_this_time;
-    float       fps_counter;
-    int             Throttle  = 1;  // Throttle to 60FPS
-    int             framecounter = 0; // FPS Counter
-    int             Autoskip = 0; // Autoskip
-    int             Skipped = 0;
-    int             Fullscreen = 0;
+    int       i;
+    int       frameskip  = 0;   // Frameskip
+    SDL_Event handy_sdl_event;
+    Uint32    handy_sdl_start_time;
+    Uint32    handy_sdl_this_time;
+    int       framecounter = 0; // FPS Counter
+    int       Autoskip = 0;     // Autoskip
+    int       Skipped = 0;
+    int       Fullscreen = 0;
+    float fps_counter;
 #ifdef DINGUX
-    int            bpp = 16; // dingux has 16 hardcoded
+    int       bpp = 16;        // dingux has 16 hardcoded
 #else
-    int            bpp = 0; // BPP -> 8,16 or 32. 0 = autodetect (default)
-    int            fsaa = 0;   // OpenGL FSAA (default off)
-    int            accel = 1;  // OpenGL Hardware accel (default on)
-    int         sync  = 0;  // OpenGL VSYNC (default off)
-    int            overlay = 1; // YUV Overlay format
-    char        overlaytype[4];   // Overlay Format
+    int       bpp = 0;         // BPP -> 8,16 or 32. 0 = autodetect (default)
+    int       fsaa = 0;        // OpenGL FSAA (default off)
+    int       accel = 1;       // OpenGL Hardware accel (default on)
+    int       sync  = 0;       // OpenGL VSYNC (default off)
+    int       overlay = 1;     // YUV Overlay format
+    char      overlaytype[4];  // Overlay Format
 #endif
+    static char load_filename[512];
+    char    *romname = NULL;
+
+    // get bios path
+    getcwd(load_filename, 512);
+    sprintf(bios_path_and_name, "%s/%s", load_filename, "lynxboot.img");
 
     gAudioEnabled = TRUE;
 
@@ -334,19 +391,32 @@ int main(int argc, char *argv[])
     printf("Written by SDLEmu Team, additions by Pierre Doucet\n");
     printf("Contact: http://sdlemu.ngemu.com | shalafi@xs4all.nl\n\n");
 
+    // If no argument given - call filebrowser
+    // As SDL is not initialized yet, gui_LoadFile calls gui_video_early_init()
     if (argc < 2) {
+#ifdef DINGUX
+        if(gui_LoadFile(load_filename))  {
+            romname = (char *)&load_filename;
+        } else {
+            handy_sdl_usage();
+            exit(EXIT_FAILURE);
+        }
+#else
         handy_sdl_usage();
         exit(EXIT_FAILURE);
+#endif
     }
 
     for ( i=0; (i < argc || argv[i] != NULL ); i++ )
     {
         if (!strcmp(argv[i], "-throttle"))     Throttle = 1;
         if (!strcmp(argv[i], "-nothrottle"))     Throttle = 0;
+#ifndef DINGUX
         if (!strcmp(argv[i], "-autoskip"))     Autoskip = 1;
         if (!strcmp(argv[i], "-noautoskip"))     Autoskip = 0;
-        if (!strcmp(argv[i], "-fps"))             framecounter = 1; // MAYBE REMOVE LATER
-        if (!strcmp(argv[i], "-nofps"))         framecounter = 0; // MAYBE REMOVE LATER
+        if (!strcmp(argv[i], "-fps"))             framecounter = 1;
+        if (!strcmp(argv[i], "-nofps"))         framecounter = 0;
+#endif
         if (!strcmp(argv[i], "-sound"))         gAudioEnabled = TRUE;
         if (!strcmp(argv[i], "-nosound"))         gAudioEnabled = FALSE;
 #ifndef DINGUX
@@ -395,7 +465,7 @@ int main(int argc, char *argv[])
                 stype = 1;
             }
         }
-#endif
+
         if (!strcmp(argv[i], "-filter"))
         {
             filter = atoi(argv[++i]);
@@ -412,7 +482,7 @@ int main(int argc, char *argv[])
                 filter = 0;
             }
         }
-#ifndef DINGUX
+
         if (!strcmp(argv[i], "-format"))
         {
             overlay = atoi(argv[++i]);
@@ -460,21 +530,10 @@ int main(int argc, char *argv[])
     }
     printf("[DONE]\n");
 
-    // Primary initalise of Handy
-    printf("Initialising Handy Core...    ");
-        try {
-        // Ugh, hardcoded lynxboot.img. Will be fixed in future versions.
-        mpLynx = new CSystem(argv[1], "lynxboot.img");
-    } catch (CLynxException &err) {
-        cerr << err.mMsg.str() << ": " << err.mDesc.str() << endl;
-        exit(EXIT_FAILURE);
-    }
-    printf("[DONE]\n\n");
+    // Primary initalise of Handy - should be called AFTER SDL_Init() but BEFORE handy_sdl_video_setup()
+    handy_sdl_core_init(romname ? romname : argv[1]);
 
-    // Query Rom Image information
-    handy_sdl_rom_info();
-
-    // Initialise Handy/SDL video
+    // Initialise Handy/SDL video 
 #ifndef DINGUX
     if(!handy_sdl_video_setup(rendertype, fsaa, Fullscreen, bpp, LynxScale, accel, sync))
 #else
@@ -483,8 +542,6 @@ int main(int argc, char *argv[])
     {
         return 0;
     }
-
-
 
     // Initialise Handy/SDL audio
     printf("\nInitialising SDL Audio...     ");
@@ -498,6 +555,10 @@ int main(int argc, char *argv[])
     // Setup of Handy Core video
     handy_sdl_video_init(mpBpp);
 
+    // Init gui (move to some other place later)
+#ifdef DINGUX
+    gui_Init();
+#endif
 
     handy_sdl_start_time = SDL_GetTicks();
 
@@ -517,6 +578,7 @@ int main(int argc, char *argv[])
                     KeyMask = handy_sdl_on_key_up(handy_sdl_event.key, KeyMask);
                     break;
                 case SDL_KEYDOWN:
+                    #ifdef DINGUX
                     if(handy_sdl_event.key.keysym.sym == SDLK_BACKSPACE) {
                         //filter = (filter + 1) % 11;
                         if(filter != 6) filter = 6; else filter = 0;
@@ -526,6 +588,12 @@ int main(int argc, char *argv[])
                         SDL_Flip(mainSurface);
                         break;
                     }
+                    if(handy_sdl_event.key.keysym.sym == SDLK_TAB) {
+                        gui_Run();
+                        KeyMask = 0;
+                        break;
+                    }
+                    #endif
                     KeyMask = handy_sdl_on_key_down(handy_sdl_event.key, KeyMask);
                     break;
                 default:
@@ -541,7 +609,7 @@ int main(int argc, char *argv[])
         // Update TimerCount
         gTimerCount++;
 
-        while( handy_sdl_update()  )
+        while( handy_sdl_update() )
         {
             if(!gSystemHalt)
             {
@@ -550,9 +618,9 @@ int main(int argc, char *argv[])
                 
                 // synchronize by sound samples
                 SDL_LockMutex(sound_mutex);
-                for(ULONG loop=1024;loop;loop--)
+                for(ULONG loop=256;loop;loop--)
                 {
-                    if(Throttle) while(gAudioBufferPointer >= HANDY_AUDIO_BUFFER_SIZE*3/4) SDL_CondWait(sound_cv, sound_mutex);
+                    if(Throttle) while(gAudioBufferPointer >= HANDY_AUDIO_BUFFER_SIZE/2) SDL_CondWait(sound_cv, sound_mutex);
                     mpLynx->Update();
                 }
                 SDL_CondSignal(sound_cv);
@@ -567,6 +635,11 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Update screen manually
+        //handy_sdl_display_callback(NULL);
+#ifdef DINGUX
+        gui_CountFPS(); // count fps my way :)
+#endif
 
         handy_sdl_this_time = SDL_GetTicks();
 
@@ -575,8 +648,10 @@ int main(int argc, char *argv[])
         printf("fps_counter : %f\n", fps_counter);
 #endif
 
+        // not needed since we are synchronizing by sound
         //if( (Throttle) && (fps_counter > 59.99) ) SDL_Delay( (Uint32)fps_counter );
 
+#ifndef DINGUX
         if(Autoskip)
         {
             if(fps_counter > 60)
@@ -594,7 +669,6 @@ int main(int argc, char *argv[])
             }
         }
 
-
         if ( framecounter )
         {
 
@@ -602,13 +676,12 @@ int main(int argc, char *argv[])
             {
                 static char buffer[256];
 
-                sprintf (buffer, "Handy %0.0f", fps_counter);
+                sprintf (buffer, "Handy %f ", fps_counter);
                 strcat( buffer, "FPS");
                 SDL_WM_SetCaption( buffer , "HANDY" );
             }
         }
-
-
+#endif
     }
 
     return 0;
