@@ -6,7 +6,7 @@ Based on:
 Handy/SDL 0.5 (c) 2004 SDLemu team
 Handy 0.95 (c) 2004 K. Wilkins
 Gui browser is mostly copy-pasted from gpSP by Exophaze
-icon is from coccioe's HandyOD
+icon is from coccijoe's HandyOD
 
 PACKAGE
 There are 2 binaries in the archive,
