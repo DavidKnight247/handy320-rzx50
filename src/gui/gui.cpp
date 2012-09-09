@@ -555,7 +555,7 @@ void ShowPreview(MENU *menu)
 			loadslot = gui_LoadSlot; // do not load img file each time
 		}
 		// show preview
-		for(int y = 0; y < 102; y++) memcpy(menuSurface->pixels + (24 + y) * 320*2 + 80*2, prebuffer + y * 320, 320);
+		for(int y = 0; y < 102; y++) memcpy((char *)menuSurface->pixels + (24 + y) * 320*2 + 80*2, prebuffer + y * 320, 320);
 	} else {
 		if(HandyBuffer != NULL) {
 			SDL_Rect dst;
