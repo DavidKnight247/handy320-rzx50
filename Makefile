@@ -33,11 +33,11 @@ TARGET     = handy320
 
 ifeq "$(OSTYPE)" "msys"
 # Note that we use optimization level 2 instead of 3--3 doesn't seem to gain much over 2
-CFLAGS   = -DDINGUX -MMD -Wall -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer 
+CFLAGS   = -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable -O2 -Wno-switch -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer 
 CPPFLAGS = -DDINGUX -MMD -Wall -O2 -Wno-switch -Wno-non-virtual-dtor -DANSI_GCC -DSDL_PATCH -ffast-math -fomit-frame-pointer -g 
 else
 ifeq "$(OSTYPE)" "dingux"
-CFLAGS = -DDINGUX -MMD -Wall -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math -msoft-float \
+CFLAGS = -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math \
 	-falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common -DANSI_GCC -DSDL_PATCH 
 CPPFLAGS = $(CFLAGS)
 endif
@@ -49,7 +49,7 @@ LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lSDLmain -lmingw32 -lz
 else
 ifeq "$(OSTYPE)" "dingux"
 LDFLAGS =
-LIBS = -lstdc++ -lSDL -lz
+LIBS = -lstdc++ -lSDL -lz -lpthread
 endif
 endif
 
