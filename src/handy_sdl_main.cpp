@@ -383,6 +383,17 @@ int main(int argc, char *argv[])
     getcwd(load_filename, 512);
     sprintf(bios_path_and_name, "%s/%s", load_filename, "lynxboot.img");
 
+#ifdef DINGUX
+    { // check if lynxboot.img exists and switch to HOME if needed
+        extern char config_full_path[512];
+        FILE *fd = fopen(bios_path_and_name, "rb");
+        if(!fd) {
+            get_config_path();
+            sprintf(bios_path_and_name, "%s/%s", config_full_path, "lynxboot.img");
+        } else fclose(fd);
+    }
+#endif
+
     gAudioEnabled = TRUE;
 
     // Default output

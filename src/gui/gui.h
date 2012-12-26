@@ -17,3 +17,5 @@ void gui_Run();
 void gui_Init(); 
 
 int gui_LoadFile(char *romname);
+
+void get_config_path();
