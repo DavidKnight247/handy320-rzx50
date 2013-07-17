@@ -66,6 +66,7 @@ void gui_video_early_deinit();
 void gui_Flip();
 void print_string(const char *s, u16 fg_color, u16 bg_color, int x, int y);
 void get_config_path();
+void get_home_path();
 
 int gui_LoadSlot = 0;
 int gui_ImageScaling = 0;
@@ -77,8 +78,10 @@ int gui_SwapAB = 0;
 
 int loadslot = -1; // flag to reload preview screen
 int done = 0; // flag to indicate exit status
+int was_used = 0; //flag to indicate if filebrowser was already used
 
 char config_full_path[MAX__PATH];
+char config_home_path[MAX__PATH];
 
 typedef struct {
 	char *itemName;
@@ -265,6 +268,11 @@ s32 load_file(char **wildcards, char *result)
 	u32 current_column = 0;
 	u32 repeat;
 	u32 i;
+	if(was_used == 0) {
+		get_home_path();
+		chdir(config_home_path);
+		was_used = 1;
+		}
 
 	while(return_value == 1) {
 		current_file_selection = 0;
@@ -285,12 +293,12 @@ s32 load_file(char **wildcards, char *result)
 		num_dirs = 0;
 		chosen_file = 0;
 		chosen_dir = 0;
-
 		getcwd(current_dir_name, MAX__PATH);
 		current_dir = opendir(current_dir_name);
+fprintf(stderr, "start_dir = %s\n", config_home_path);
 
 		// DEBUG
-		//printf("Current directory: %s\n", current_dir_name);
+printf("Current directory: %s\n", current_dir_name);
 		
 		do {
 			if(current_dir) current_file = readdir(current_dir); else current_file = NULL;
@@ -643,36 +651,58 @@ void get_config_path()
 	if(strlen(config_full_path) == 0) {
 
 		// check HOME
-		#ifndef WIN32
+//		#ifndef WIN32
 		char *env = getenv("HOME");
 
 		// if HOME found, append to config_full_path
 		if(env != NULL) strcat(config_full_path, env);
 		strcat(config_full_path, "/.handy"); 
 		mkdir(config_full_path
-		#ifndef WIN32 
+//		#ifndef WIN32 
 		, 0777 
-		#endif 
+//		#endif 
 		);
 	
 		// return if not read-only, otherwise we are on rzx50 or a380 dingux
 		if(errno != EROFS && errno != EACCES && errno != EPERM) return;
 		memset(config_full_path, 0 , 512);
-		#endif
+//		#endif
 
 		// check current working dir
 		getcwd(config_full_path, MAX__PATH);
 		strcat(config_full_path, "/.handy");
 		mkdir(config_full_path
-		#ifndef WIN32 
+//		#ifndef WIN32 
 		, 0777 
-		#endif 
+//		#endif 
 		);
 		
 	}
 
 	// DEBUG
-	//printf("Config and save dir: %s\n", config_full_path);
+	printf("Config and save dir: %s\n", config_full_path);
+}
+
+void get_home_path()
+{
+	// 1) get HOME environment, check if it's read-only
+	// if yes, 2) check if current working directory is read-only
+	// if yes 3) change to /usr/etc
+
+	// current working dir may be already set (lame check)
+	if(strlen(config_home_path) == 0) {
+
+		// check HOME
+//		#ifndef WIN32
+		char *home_path = getenv("HOME");
+
+		// if HOME found, append to config_full_path
+		if(home_path != NULL) strcat(config_home_path, home_path);
+	
+		// return if not read-only, otherwise we are on rzx50 or a380 dingux
+		if(errno != EROFS && errno != EACCES && errno != EPERM) return;
+		memset(config_home_path, 0 , 512);
+	}
 }
 
 void gui_Init()
