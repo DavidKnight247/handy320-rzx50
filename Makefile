@@ -9,7 +9,9 @@
 
 # Figure out which system we're compiling for, and set the appropriate variables
 
-OSTYPE=dingux
+#OSTYPE=msys
+#OSTYPE=dingux
+OSTYPE=gcwzero
 
 ifeq "$(OSTYPE)" "msys"	
 EXESUFFIX  = .exe
@@ -26,6 +28,15 @@ CC         = mipsel-linux-gcc
 LD         = mipsel-linux-gcc
 STRIP      = mipsel-linux-strip
 
+else
+ifeq "$(OSTYPE)" "gcwzero"
+EXESUFFIX  = 
+
+CC         = mipsel-linux-gcc
+LD         = mipsel-linux-gcc
+STRIP      = mipsel-linux-strip
+
+endif
 endif
 endif
 
@@ -40,6 +51,13 @@ ifeq "$(OSTYPE)" "dingux"
 CFLAGS = -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math \
 	-falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common -DANSI_GCC -DSDL_PATCH 
 CPPFLAGS = $(CFLAGS)
+else
+ifeq "$(OSTYPE)" "gcwzero"
+#TODO: Are optimisations correct for gcwzero?
+CFLAGS = -DGCWZERO -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -O2 -march=mips32 -mtune=r4600 -fomit-frame-pointer -fsigned-char -ffast-math \
+	-falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common -DANSI_GCC -DSDL_PATCH 
+CPPFLAGS = $(CFLAGS)
+endif
 endif
 endif
 
@@ -49,13 +67,17 @@ LIBS = -static -lstdc++ -Wl,-Bdynamic -lSDL -lSDLmain -lmingw32 -lz
 else
 ifeq "$(OSTYPE)" "dingux"
 LDFLAGS =
-LIBS = -lstdc++ -lSDL -lz -lpthread
+LIBS = -lstdc++ -lSDL -lz -lpthread 
+else
+ifeq "$(OSTYPE)" "gcwzero"
+LDFLAGS =
+LIBS = -lstdc++ -lSDL -lz -lpthread 
 endif
 endif
+endif
 
 
-INCS = -I./src -I./src/handy-0.95 -I./src/sdlemu
-
+INCS = -I./src -I./src/handy-0.95 -I./src/sdlemu 
 OBJS = \
 		obj/cart.o \
 		obj/memmap.o \
@@ -123,4 +145,3 @@ $(TARGET)$(EXESUFFIX): $(OBJS)
 # The "-" in front is there just in case they haven't been created yet
 
 -include obj/*.d
-
