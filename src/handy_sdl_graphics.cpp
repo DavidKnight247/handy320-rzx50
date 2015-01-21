@@ -82,8 +82,13 @@ int handy_sdl_video_early_setup(int surfacewidth, int surfaceheight, int sdl_bpp
     {
         uint32 vm = 0; // 0 - 320x240, 1 - 400x240, 2 - 480x272
 
+#ifdef GCWZERO //GCWZERO add unscaled mode as 0 as we use the IPU for HW upscaling
+        #define NUMOFVIDEOMODES 4
+        struct { uint32 x; uint32 y; } VModes[NUMOFVIDEOMODES] = { {160, 102}, {320, 240}, {400, 240}, {480, 272} };
+#else
         #define NUMOFVIDEOMODES 3
         struct { uint32 x; uint32 y; } VModes[NUMOFVIDEOMODES] = { {320, 240}, {400, 240}, {480, 272} };
+#endif
 
         // check 3 videomodes: 480x272, 400x240, 320x240
         for(vm = NUMOFVIDEOMODES-1; vm >= 0; vm--) {
@@ -96,6 +101,12 @@ int handy_sdl_video_early_setup(int surfacewidth, int surfaceheight, int sdl_bpp
     }
 
 #endif
+
+#ifdef GCZERO //force unscaled as we're using the IPU to upscale
+    surfacewidth  = 160;
+    surfaceheight = 102;
+#endif
+
     mainSurface = SDL_SetVideoMode(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
 
     if (mainSurface == NULL)
@@ -408,7 +419,12 @@ int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
 {
     Uint32             videoflags;
 #ifdef DINGUX
-    videoflags = SDL_HWSURFACE | SDL_TRIPLEBUF;
+/*
+/*  THIS CAUSES DRAMATIC SLOWDOWNS!  
+/*  TODO: Enable DOUBLE_BUF and TRIPLE_BUF without slowdowns
+/*  videoflags = SDL_HWSURFACE | SDL_TRIPLEBUF;
+*/
+    videoflags = SDL_HWSURFACE;
 #else
     if (info->hw_available)
     {
@@ -792,6 +808,10 @@ inline void handy_sdl_draw_graphics(void)
         if (LynxScale == 1)
         {
 #ifdef DINGUX
+
+            #ifdef GCWZERO //Use IPU to upscale, just blit default lynx resolution
+            SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
+            #else
             if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
             switch(mainSurface->w) {
                 case 320:
@@ -803,6 +823,7 @@ inline void handy_sdl_draw_graphics(void)
                 case 480:
                     upscale_480x272((Uint32 *)HandyBuffer->pixels, (Uint32 *)mainSurface->pixels);
                     break;
+            #endif
             }
             if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
             /*UpscaleBresenham((Uint16 *)HandyBuffer->pixels, 
