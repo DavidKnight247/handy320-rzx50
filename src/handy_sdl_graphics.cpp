@@ -102,7 +102,7 @@ int handy_sdl_video_early_setup(int surfacewidth, int surfaceheight, int sdl_bpp
 
 #endif
 
-#ifdef GCZERO //force unscaled as we're using the IPU to upscale
+#ifdef GCWZERO //force unscaled as we're using the IPU to upscale
     surfacewidth  = 160;
     surfaceheight = 102;
 #endif
