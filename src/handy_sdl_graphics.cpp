@@ -823,8 +823,8 @@ inline void handy_sdl_draw_graphics(void)
                 case 480:
                     upscale_480x272((Uint32 *)HandyBuffer->pixels, (Uint32 *)mainSurface->pixels);
                     break;
-            #endif
             }
+            #endif
             if(SDL_MUSTLOCK(mainSurface)) SDL_UnlockSurface(mainSurface);
             /*UpscaleBresenham((Uint16 *)HandyBuffer->pixels, 
                                             HandyBuffer->pitch, 
