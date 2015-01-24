@@ -708,7 +708,11 @@ void get_home_path()
 void gui_Init()
 {
 	get_config_path();
+#ifdef GCWZERO
+	menuSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, 160, 102, 16, 0, 0, 0, 0);
+#else
 	menuSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 16, 0, 0, 0, 0);
+#endif
 }
 
 void gui_Run()
@@ -778,8 +782,13 @@ void gui_ShowFPS()
 void gui_video_early_init()
 {
 	SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO);
-	handy_sdl_video_early_setup(320, 240, 16, SDL_HWSURFACE | SDL_TRIPLEBUF);
+#ifdef GCWZERO
+	handy_sdl_video_early_setup(160, 102, 16, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	menuSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, 160, 102, 16, 0, 0, 0, 0);
+#else
+	handy_sdl_video_early_setup(320, 240, 16, SDL_SWSURFACE);
 	menuSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 16, 0, 0, 0, 0);
+#endif
 	SDL_ShowCursor(0);
 	SDL_EnableKeyRepeat(/*SDL_DEFAULT_REPEAT_DELAY*/ 150, /*SDL_DEFAULT_REPEAT_INTERVAL*/30);
 }

@@ -562,7 +562,6 @@ int main(int argc, char *argv[])
     }
     printf("[DONE]\n");
 
-
     // Setup of Handy Core video
     handy_sdl_video_init(mpBpp);
 

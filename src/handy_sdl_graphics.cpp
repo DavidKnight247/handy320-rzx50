@@ -269,7 +269,11 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     // All the rendering is done in the graphics buffer and is then
     // blitted to the mainSurface and thus to the screen.
 
+#ifdef GCWZERO
+    HandyBuffer = SDL_CreateRGBSurface(SDL_HWSURFACE,
+#else
     HandyBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
+#endif
         LynxWidth,
         LynxHeight,
         sdl_bpp_flag,
@@ -419,12 +423,13 @@ int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
 {
     Uint32             videoflags;
 #ifdef DINGUX
-/*
-/*  THIS CAUSES DRAMATIC SLOWDOWNS!  
-/*  TODO: Enable DOUBLE_BUF and TRIPLE_BUF without slowdowns
-/*  videoflags = SDL_HWSURFACE | SDL_TRIPLEBUF;
-*/
-    videoflags = SDL_HWSURFACE;
+
+#ifdef GCWZERO
+    videoflags = SDL_HWSURFACE | SDL_DOUBLEBUF;
+#else
+    videoflags = SDL_SWSURFACE;
+#endif
+
 #else
     if (info->hw_available)
     {
@@ -516,7 +521,17 @@ UBYTE *handy_sdl_display_callback(ULONG objref)
     
     // show fps if needed
     gui_ShowFPS();
+#ifdef GCWZERO 
+    /*With HWSURFACE and DOUBLEBUF enabled, framerate drops to around 50fps  /
+    / so we need to skip alternate flips to maintain 60fps                  */
+    static int everyotherframe=1;
+    if(everyotherframe) {
+	SDL_Flip( mainSurface );
+	everyotherframe=0;
+    } else everyotherframe=1;
+#else
     SDL_Flip( mainSurface );
+#endif
 #else
     switch( rendertype )
     {
