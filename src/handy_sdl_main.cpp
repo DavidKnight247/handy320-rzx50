@@ -590,8 +590,31 @@ int main(int argc, char *argv[])
                 case SDL_KEYDOWN:
                     #ifdef DINGUX
                     if(handy_sdl_event.key.keysym.sym == SDLK_BACKSPACE) {
+		    #ifdef GCWZERO //Use the HW scaling functions instead
+		        static int fullscreen;
+		        fullscreen = !fullscreen;
+		        if (!fullscreen)
+		        {
+ 		    	    FILE* aspect_ratio_file = fopen("/sys/devices/platform/jz-lcd.0/keep_aspect_ratio", "w");
+			    if (aspect_ratio_file)
+		 	        { 
+				    fwrite("1", 1, 1, aspect_ratio_file);
+				    fclose(aspect_ratio_file);
+			        }
+		        }
+		        if (fullscreen)
+		        {
+			    FILE* aspect_ratio_file = fopen("/sys/devices/platform/jz-lcd.0/keep_aspect_ratio", "w");
+			    if (aspect_ratio_file)
+			        { 
+				    fwrite("0", 1, 1, aspect_ratio_file);
+				    fclose(aspect_ratio_file);
+			        }
+		        }
+		    #else
                         //filter = (filter + 1) % 11;
                         if(filter != 6) filter = 6; else filter = 0;
+		    #endif
                         SDL_FillRect(mainSurface,NULL,SDL_MapRGBA(mainSurface->format, 0, 0, 0, 255));
                         SDL_Flip(mainSurface);
                         SDL_FillRect(mainSurface,NULL,SDL_MapRGBA(mainSurface->format, 0, 0, 0, 255));
