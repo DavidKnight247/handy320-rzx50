@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Handy320
+Comment=Atari Lynx emulator
+Exec=handy320 %f
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=icon
+Categories=emulators;
+MimeType=application/x-lynx-rom;application/x-gzip;application/zip;
+X-OD-Manual=readme.txt
