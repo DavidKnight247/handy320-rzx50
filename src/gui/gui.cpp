@@ -33,16 +33,9 @@
 
 /* defines and macros */
 #define MAX__PATH 1024
-#ifdef GCWZERO
-#define FILE_LIST_ROWS 8
-#define FILE_LIST_POSITION 0
-#define DIR_LIST_POSITION 0
-#else
 #define FILE_LIST_ROWS 24
 #define FILE_LIST_POSITION 8
 #define DIR_LIST_POSITION 208
-#endif
-
 
 #define color16(red, green, blue) ((red << 11) | (green << 5) | blue)
 
@@ -56,7 +49,9 @@
 /* external references */
 extern int Throttle; // show fps, from handy_sdl_main.cpp
 extern char rom_name_with_no_ext[128]; // name if current rom, used for load/save state
-
+#ifdef GCWZERO
+int scanlinesrequested;
+#endif
 /* SDL declarations */
 extern SDL_Surface *HandyBuffer; // Our Handy/SDL display buffer
 extern SDL_Surface *mainSurface; // Our Handy/SDL primary display
@@ -106,7 +101,9 @@ typedef struct {
 
 char *gui_ScaleNames[] = {"simple2x", "fullscreen"};
 char *gui_YesNo[] = {"no", "yes"};
-
+#ifdef GCWZERO
+char *gui_ScanlinesSelect[] = {"no", "light", "dark"};
+#endif
 MENUITEM gui_MainMenuItems[] = {
 #ifndef GCWZERO
 	{(char *)"Load rom", NULL, NULL, NULL, &gui_FileBrowserRun},
@@ -125,7 +122,9 @@ MENU gui_MainMenu = { 6, 0, (MENUITEM *)&gui_MainMenuItems };
 #endif
 
 MENUITEM gui_ConfigMenuItems[] = {
-#ifndef GCWZERO
+#ifdef GCWZERO
+	{(char *)"Scanlines: ", &scanlinesrequested, 2, (char **)&gui_ScanlinesSelect, NULL},
+#else
 	{(char *)"Upscale  : ", &gui_ImageScaling, 1, (char **)&gui_ScaleNames, NULL},
 #endif
 	//{(char *)"Frameskip: ", &gui_Frameskip, 9, NULL, NULL},
@@ -134,11 +133,7 @@ MENUITEM gui_ConfigMenuItems[] = {
 	{(char *)"Swap A/B : ", &gui_SwapAB, 1, (char **)&gui_YesNo, NULL}
 };
 
-#ifdef GCWZERO
-MENU gui_ConfigMenu = { 3, 0, (MENUITEM *)&gui_ConfigMenuItems };
-#else
 MENU gui_ConfigMenu = { 4, 0, (MENUITEM *)&gui_ConfigMenuItems };
-#endif
 /*
 	Clears mainSurface
 */
@@ -396,11 +391,7 @@ printf("Current directory: %s\n", current_dir_name);
 			//flip_screen();
 			SDL_FillRect(menuSurface, NULL, COLOR_BG);
 			print_string(current_dir_short, COLOR_ACTIVE_ITEM, COLOR_BG, 0, 0);
-#ifdef GCWZERO
-			print_string("Press B to exit menu", COLOR_HELP_TEXT, COLOR_BG, 0, 94);
-#else
 			print_string("Press B to return to the main menu", COLOR_HELP_TEXT, COLOR_BG, 20, 220);
-#endif
 			for(i = 0, current_file_number = i + current_file_scroll_value; i < FILE_LIST_ROWS; i++, current_file_number++) {
 				if(current_file_number < num_files) {
 					strncpy(print_buffer,file_list[current_file_number], 38);
@@ -585,16 +576,6 @@ void ShowPreview(MENU *menu)
 			loadslot = gui_LoadSlot; // do not load img file each time
 		}
 		// show preview
-#ifdef GCWZERO
-		for(int y = 0; y < 102; y++) memcpy((char *)menuSurface->pixels + (    y) * 320*2       , prebuffer + y * 320, 320);
-
-	} else {
-		if(HandyBuffer != NULL) {
-			SDL_Rect dst;
-			dst.x = 0;
-			dst.y = 0;
-			SDL_BlitSurface(HandyBuffer, 0, menuSurface, &dst);
-#else
 		for(int y = 0; y < 102; y++) memcpy((char *)menuSurface->pixels + (24 + y) * 320*2 + 80*2, prebuffer + y * 320, 320);
 
 	} else {
@@ -603,7 +584,6 @@ void ShowPreview(MENU *menu)
 			dst.x = 80;
 			dst.y = 24;
 			SDL_BlitSurface(HandyBuffer, 0, menuSurface, &dst);
-#endif
 		}
 	}
 }
@@ -619,23 +599,6 @@ void ShowMenu(MENU *menu)
 	// clear buffer
 	SDL_FillRect(menuSurface, NULL, COLOR_BG);
 
-#ifdef GCWZERO //We're writing over the preview so we have to draw preview first
-	// show preview screen
-	ShowPreview(menu);
-
-	// show menu lines
-	for(i = 0; i < menu->itemNum; i++, mi++) {
-		int fg_color;
-
-		if(menu->itemCur == i) fg_color = COLOR_ACTIVE_ITEM; else fg_color = COLOR_INACTIVE_ITEM;
-		ShowMenuItem(2, 16 + i * 8, mi, fg_color);
-	}
-
-	// print info string
-	print_string("Press B to exit menu", COLOR_HELP_TEXT, COLOR_BG, 0, 94);
-	print_string(" Handy320 v0.1 GCW0 ", COLOR_HELP_TEXT, COLOR_BG, 0, 0);
-	//print_string("Handy/SDL 0.5 (c) K. Wilkins and SDLemu", COLOR_HELP_TEXT, COLOR_BG, 4, 12); 
-#else
 	// show menu lines
 	for(i = 0; i < menu->itemNum; i++, mi++) {
 		int fg_color;
@@ -651,7 +614,6 @@ void ShowMenu(MENU *menu)
 	print_string("Press B to return to game", COLOR_HELP_TEXT, COLOR_BG, 56, 220);
 	print_string("Handy320 v0.1 for OpenDingux", COLOR_HELP_TEXT, COLOR_BG, 44, 2);
 	print_string("Handy/SDL 0.5 (c) K. Wilkins and SDLemu", COLOR_HELP_TEXT, COLOR_BG, 4, 12);
-#endif
 }
 
 /*
@@ -703,30 +665,30 @@ void get_config_path()
 	if(strlen(config_full_path) == 0) {
 
 		// check HOME
-//		#ifndef WIN32
+		#ifndef WIN32
 		char *env = getenv("HOME");
 
 		// if HOME found, append to config_full_path
 		if(env != NULL) strcat(config_full_path, env);
 		strcat(config_full_path, "/.handy"); 
 		mkdir(config_full_path
-//		#ifndef WIN32 
+		#ifndef WIN32 
 		, 0777 
-//		#endif 
+		#endif 
 		);
 	
 		// return if not read-only, otherwise we are on rzx50 or a380 dingux
 		if(errno != EROFS && errno != EACCES && errno != EPERM) return;
 		memset(config_full_path, 0 , 512);
-//		#endif
+		#endif
 
 		// check current working dir
 		getcwd(config_full_path, MAX__PATH);
 		strcat(config_full_path, "/.handy");
 		mkdir(config_full_path
-//		#ifndef WIN32 
+		#ifndef WIN32 
 		, 0777 
-//		#endif 
+		#endif 
 		);
 		
 	}
@@ -745,7 +707,7 @@ void get_home_path()
 	if(strlen(config_home_path) == 0) {
 
 		// check HOME
-//		#ifndef WIN32
+		//#ifndef WIN32
 		char *home_path = getenv("HOME");
 
 		// if HOME found, append to config_full_path
@@ -769,6 +731,9 @@ void gui_Init()
 
 void gui_Run()
 {
+#ifdef GCWZERO
+	mainSurface = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE|SDL_DOUBLEBUF);
+#endif
 	extern int filter; // remove later, temporal hack
 	extern int BT_A, BT_B; // remove later, temporal hack
 
@@ -834,13 +799,8 @@ void gui_ShowFPS()
 void gui_video_early_init()
 {
 	SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO);
-#ifdef GCWZERO
-	handy_sdl_video_early_setup(160, 102, 16, SDL_HWSURFACE | SDL_DOUBLEBUF);
-	menuSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, 160, 102, 16, 0, 0, 0, 0);
-#else
 	handy_sdl_video_early_setup(320, 240, 16, SDL_SWSURFACE);
 	menuSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 16, 0, 0, 0, 0);
-#endif
 	SDL_ShowCursor(0);
 	SDL_EnableKeyRepeat(/*SDL_DEFAULT_REPEAT_DELAY*/ 150, /*SDL_DEFAULT_REPEAT_INTERVAL*/30);
 }
@@ -859,13 +819,8 @@ void gui_Flip()
 {
 	SDL_Rect dstrect;
 
-#ifdef GCWZERO
-	dstrect.x = 0;
-	dstrect.y = 0;
-#else
 	dstrect.x = (mainSurface->w - 320) / 2;
 	dstrect.y = (mainSurface->h - 240) / 2;
-#endif
 	SDL_BlitSurface(menuSurface, 0, mainSurface, &dstrect);
 	SDL_Flip(mainSurface);
 }

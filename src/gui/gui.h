@@ -20,3 +20,6 @@ int gui_LoadFile(char *romname);
 
 void get_config_path();
 void get_home_path();
+#ifdef GCWZERO
+extern int scanlinesrequested;
+#endif

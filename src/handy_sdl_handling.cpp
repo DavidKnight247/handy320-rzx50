@@ -80,7 +80,11 @@ int BT_B = SDLK_LALT;
     //#define BT_B        SDLK_LALT        // B
     #define BT_OPT1     SDLK_LSHIFT      // Y
     #define BT_OPT2     SDLK_SPACE       // X
+#ifdef GCWZERO
+    #define BT_OFF      SDLK_RCTRL      // quit from menu to prevent accidental triggering. SELECT=menu (see sdl_handy_main.cpp)
+#else
     #define BT_OFF      SDLK_ESCAPE      // SELECT
+#endif
 #else
     #define BT_LEFT     SDLK_LEFT
     #define BT_RIGHT    SDLK_RIGHT

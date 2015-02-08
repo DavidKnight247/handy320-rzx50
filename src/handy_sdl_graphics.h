@@ -63,6 +63,10 @@
 #include <SDL/SDL_main.h>
 #include <SDL/SDL_timer.h>
 
+#ifdef GCWZERO
+extern int redrawbackground;
+#endif
+
 inline	void    handy_sdl_scale(void);
 inline  void    handy_sdl_draw_graphics(void);
 inline  void    handy_sdl_draw_filter(int filtertype, SDL_Surface *src, SDL_Surface *dst, Uint8 *delta);

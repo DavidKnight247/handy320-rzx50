@@ -65,6 +65,12 @@
 #define     HANDY_VERSION           	"Handy 0.95 WIN32"
 #define     HANDY_BASE_FPS              60
 
+#ifdef GCWZERO
+extern int everyotherframe;
+extern int originalshow;
+extern int lynxversion;
+#endif
+
 /* SDL declarations */
 extern SDL_Surface		*HandyBuffer; 			// Our Handy/SDL display buffer
 extern SDL_Surface		*mainSurface;	 		// Our Handy/SDL primary display

@@ -61,7 +61,9 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_main.h>
 #include <SDL/SDL_timer.h>
-
+#ifdef GCWZERO
+#include <SDL/SDL_image.h>
+#endif
 #include "handy_sdl_main.h"
 #include "handy_sdl_graphics.h"
 #ifndef DINGUX
@@ -71,7 +73,6 @@
 #endif
 #include "sdlemu/sdlemu_filter.h"
 #include "gui/gui.h"
-
 /*
     This is called also from gui when initializing for rom browser
 */
@@ -102,12 +103,14 @@ int handy_sdl_video_early_setup(int surfacewidth, int surfaceheight, int sdl_bpp
 
 #endif
 
-#ifdef GCWZERO //force unscaled as we're using the IPU to upscale
+#ifdef GCWZERO //force unscaled as default is using the IPU to upscale
     surfacewidth  = 160;
     surfaceheight = 102;
 #endif
-
-    mainSurface = SDL_SetVideoMode(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
+if (originalshow)
+    mainSurface  = SDL_SetVideoMode(320, 240, sdl_bpp_flag, videoflags);
+else
+    mainSurface  = SDL_SetVideoMode(surfacewidth, surfaceheight, sdl_bpp_flag, videoflags);
 
     if (mainSurface == NULL)
     {
@@ -269,11 +272,7 @@ int handy_sdl_video_setup(int rendertype, int fsaa, int fullscreen, int bpp, int
     // All the rendering is done in the graphics buffer and is then
     // blitted to the mainSurface and thus to the screen.
 
-#ifdef GCWZERO
-    HandyBuffer = SDL_CreateRGBSurface(SDL_HWSURFACE,
-#else
-    HandyBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
-#endif
+	HandyBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE,
         LynxWidth,
         LynxHeight,
         sdl_bpp_flag,
@@ -425,7 +424,7 @@ int handy_sdl_video_setup_sdl(const SDL_VideoInfo *info)
 #ifdef DINGUX
 
 #ifdef GCWZERO
-    videoflags = SDL_HWSURFACE | SDL_DOUBLEBUF;
+    videoflags = SDL_HWSURFACE | SDL_TRIPLEBUF;
 #else
     videoflags = SDL_SWSURFACE;
 #endif
@@ -524,11 +523,16 @@ UBYTE *handy_sdl_display_callback(ULONG objref)
 #ifdef GCWZERO 
     /*With HWSURFACE and DOUBLEBUF enabled, framerate drops to around 50fps  /
     / so we need to skip alternate flips to maintain 60fps                  */
-    static int everyotherframe=1;
-    if(everyotherframe) {
+    if(!everyotherframe) 
 	SDL_Flip( mainSurface );
-	everyotherframe=0;
-    } else everyotherframe=1;
+    else { //<60fps so alternate flipping required
+        static int flip=0;
+	if (flip) {
+	    SDL_Flip( mainSurface );
+		flip++;
+		if (flip=2) flip=0;
+	} else flip++;
+    }
 #else
     SDL_Flip( mainSurface );
 #endif
@@ -823,9 +827,74 @@ inline void handy_sdl_draw_graphics(void)
         if (LynxScale == 1)
         {
 #ifdef DINGUX
-
             #ifdef GCWZERO //Use IPU to upscale, just blit default lynx resolution
-            SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
+//need to free the surfaces.
+		static int overlaydrawn;
+		static int overlaydrawn2;
+		static SDL_Surface *overlay;
+		static SDL_Surface *overlay2;
+		if (scanlinesrequested == 1) {
+			if (!overlaydrawn) {
+				overlay=IMG_Load("./verticalscanlines15.png");
+				overlaydrawn++;
+			}
+		} else if (scanlinesrequested == 2) {
+			if (!overlaydrawn2) {
+				overlay2=IMG_Load("./verticalscanlines30.png");
+				overlaydrawn2++;
+			}
+		} 
+		static int backgrounddrawn1;
+		static int backgrounddrawn2;
+		if (originalshow) {
+			static SDL_Rect background_rect;
+			background_rect.x = 0;
+			background_rect.y = 0;
+			background_rect.h = 240;
+			background_rect.w = 320;
+			if (lynxversion == 1) {
+				static SDL_Surface *background;
+				static SDL_Surface *unoptimisedbackground;
+				if (!backgrounddrawn1) {
+					unoptimisedbackground = IMG_Load("./background_lynx.png");
+					background = SDL_DisplayFormat(unoptimisedbackground);
+					SDL_FreeSurface(unoptimisedbackground);
+					backgrounddrawn1++;
+				}
+				if(redrawbackground) {
+					SDL_BlitSurface (background, NULL, mainSurface, &background_rect);
+					redrawbackground--;
+				}
+			} else if (lynxversion == 2) {
+				static SDL_Surface *background2;
+				static SDL_Surface *unoptimisedbackground2;
+				if (!backgrounddrawn2) {
+					unoptimisedbackground2 = IMG_Load("./background_lynx2.png");
+					background2 = SDL_DisplayFormat(unoptimisedbackground2);
+					SDL_FreeSurface(unoptimisedbackground2);
+					backgrounddrawn2++;
+				}
+				if(redrawbackground) {
+					SDL_BlitSurface (background2, NULL, mainSurface, &background_rect);
+					redrawbackground--;
+				}
+			}
+			SDL_Rect centrerect;
+			centrerect.x = 320/4;
+			centrerect.y = 240/4 + 9;
+			centrerect.w = 160;
+			centrerect.h = 102;
+                	SDL_BlitSurface(HandyBuffer, NULL, mainSurface, &centrerect);
+			if(scanlinesrequested)	SDL_BlitSurface(overlay, NULL, mainSurface, &centrerect);
+			if(scanlinesrequested)	SDL_BlitSurface(overlay2, NULL, mainSurface, &centrerect);
+
+	    } else {
+		redrawbackground = 5;
+                SDL_BlitSurface(HandyBuffer, NULL, mainSurface, NULL);
+		if(scanlinesrequested == 1)	SDL_BlitSurface(overlay, NULL, mainSurface, NULL);
+		if(scanlinesrequested == 2)	SDL_BlitSurface(overlay2, NULL, mainSurface, NULL);
+	    }
+
             #else
             if(SDL_MUSTLOCK(mainSurface)) SDL_LockSurface(mainSurface);
             switch(mainSurface->w) {

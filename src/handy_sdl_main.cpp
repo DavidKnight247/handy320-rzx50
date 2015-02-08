@@ -77,6 +77,12 @@
 /* SDL declarations */
 SDL_Surface        *HandyBuffer;             // Our Handy/SDL display buffer
 SDL_Surface        *mainSurface;             // Our Handy/SDL primary display
+#ifdef GCWZERO
+int redrawbackground;
+int originalshow;
+int lynxversion;
+int everyotherframe;
+#endif
 
 /* Handy declarations */
 Uint32            *mpLynxBuffer;
@@ -145,6 +151,8 @@ int                filter = 0;                // Scaling/Scanline routine.
                             Handy WIN32 with minor tweaks for SDL. It is used for
                             basic throttle of the Handy core.
 */
+
+
 inline    int handy_sdl_update(void)
 {
 
@@ -284,6 +292,37 @@ void handy_sdl_quit(void)
     SDL_PauseAudio(1);
     emulation   = -1;
 
+#ifdef GCWZERO //saveconfiguration
+  	FILE* gcwconfig;
+	gcwconfig = fopen("/media/home/.handy/.cfg", "r+");
+	if (!gcwconfig) {
+		gcwconfig = fopen("/media/home/.handy/.cfg", "w");
+		printf("Saving new configuration");
+		fprintf(gcwconfig, "%d%d%d", originalshow, lynxversion, scanlinesrequested);
+	} else {
+		int gcwcfg[3];
+		int gcwcfg2[3];
+		gcwcfg[0]=originalshow;
+		gcwcfg[1]=lynxversion;
+		gcwcfg[2]=scanlinesrequested;
+		int i;
+		for(i=0;i<3;i++) {
+			fscanf(gcwconfig, "%1d", &gcwcfg2[i]);
+		}
+//		printf("gcwcfg=%d %d %d, gcwcfg2=%d %d %d", gcwcfg[0], gcwcfg[1], gcwcfg[2], gcwcfg2[0], gcwcfg2[1], gcwcfg2[2]);
+
+		if( (gcwcfg[0] != gcwcfg2[0]) || (gcwcfg[1] != gcwcfg2[1]) || (gcwcfg[2] != gcwcfg2[2]) ) {
+			printf("Saving new configuration");
+			rewind(gcwconfig);
+			fprintf(gcwconfig, "%d%d%d", originalshow, lynxversion, scanlinesrequested);
+		}
+		else
+			printf("No configuration changes made");
+	}
+	fclose(gcwconfig);
+#endif
+
+
 #ifndef DINGUX
     //Remove YUV Overlay
     if ( rendertype == 3 )
@@ -291,11 +330,12 @@ void handy_sdl_quit(void)
 #endif
 
     //Let is give some free memory
+//    free(mpLynxBuffer);
     free(mpLynxBuffer);
 
     // Destroy SDL Surface's
-    SDL_FreeSurface(HandyBuffer);
     SDL_FreeSurface(mainSurface);
+    SDL_FreeSurface(HandyBuffer);//crashes is swapped around on GCW0
 
     // Close SDL Subsystems
     SDL_QuitSubSystem(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
@@ -532,6 +572,26 @@ int main(int argc, char *argv[])
         }
 #endif
     }
+#ifdef GCWZERO 
+	//load current config
+	FILE* gcwconfigfile = fopen("/media/home/.handy/.cfg", "r");
+        if (gcwconfigfile)
+	{
+		int gcwconfigurationsettings[3];
+		int i;
+		for(i=0;i<3;i++) {
+			fscanf(gcwconfigfile, "%1d", &gcwconfigurationsettings[i]);
+		}
+		printf("\nConfig file loaded, contents = %d %d %d\n", gcwconfigurationsettings[0], gcwconfigurationsettings[1],gcwconfigurationsettings[2]);
+
+		originalshow       = gcwconfigurationsettings[0];
+		lynxversion        = gcwconfigurationsettings[1];
+		scanlinesrequested = gcwconfigurationsettings[2];
+		redrawbackground   = 5;
+
+	fclose(gcwconfigfile);
+	}
+#endif
 
     // Initalising SDL for Audio and Video support
     printf("Initialising SDL...           ");
@@ -591,26 +651,17 @@ int main(int argc, char *argv[])
                     #ifdef DINGUX
                     if(handy_sdl_event.key.keysym.sym == SDLK_BACKSPACE) {
 		    #ifdef GCWZERO //Use the HW scaling functions instead
-		        static int fullscreen;
-		        fullscreen = !fullscreen;
-		        if (!fullscreen)
-		        {
- 		    	    FILE* aspect_ratio_file = fopen("/sys/devices/platform/jz-lcd.0/keep_aspect_ratio", "w");
-			    if (aspect_ratio_file)
-		 	        { 
-				    fwrite("1", 1, 1, aspect_ratio_file);
-				    fclose(aspect_ratio_file);
-			        }
-		        }
-		        if (fullscreen)
-		        {
-			    FILE* aspect_ratio_file = fopen("/sys/devices/platform/jz-lcd.0/keep_aspect_ratio", "w");
-			    if (aspect_ratio_file)
-			        { 
-				    fwrite("0", 1, 1, aspect_ratio_file);
-				    fclose(aspect_ratio_file);
-			        }
-		        }
+			redrawbackground=5;
+			if(!originalshow || (originalshow == 1) ) {
+				originalshow++;
+				if (originalshow == 1) lynxversion = 1;
+				else lynxversion = 2;
+				mainSurface=SDL_SetVideoMode(320,240,16,SDL_HWSURFACE|SDL_DOUBLEBUF);
+			} else {
+				originalshow=0;
+				mainSurface=SDL_SetVideoMode(160,102,16,SDL_HWSURFACE|SDL_DOUBLEBUF);
+			}
+
 		    #else
                         //filter = (filter + 1) % 11;
                         if(filter != 6) filter = 6; else filter = 0;
@@ -621,8 +672,18 @@ int main(int argc, char *argv[])
                         SDL_Flip(mainSurface);
                         break;
                     }
+#ifdef GCWZERO
+                    if(handy_sdl_event.key.keysym.sym == SDLK_TAB || handy_sdl_event.key.keysym.sym == SDLK_ESCAPE ) {
+			redrawbackground=5;
+                        gui_Run();
+
+			if (originalshow)mainSurface = SDL_SetVideoMode(320,240,16,SDL_HWSURFACE|SDL_DOUBLEBUF);
+			else mainSurface = SDL_SetVideoMode(160,102,16,SDL_HWSURFACE|SDL_DOUBLEBUF);
+#else
                     if(handy_sdl_event.key.keysym.sym == SDLK_TAB) {
                         gui_Run();
+
+#endif
                         KeyMask = 0;
                         break;
                     }
@@ -678,11 +739,14 @@ int main(int argc, char *argv[])
 
         fps_counter = (((float)gTimerCount/(handy_sdl_this_time-handy_sdl_start_time))*1000.0);
 #ifdef HANDY_SDL_DEBUG
-        printf("fps_counter : %f\n", fps_counter);
 #endif
 
         // not needed since we are synchronizing by sound
         //if( (Throttle) && (fps_counter > 59.99) ) SDL_Delay( (Uint32)fps_counter );
+#ifdef GCWZERO
+        if(fps_counter < 60) everyotherframe=1; //skip even frames until we catch up.
+	else everyotherframe=0;
+#endif
 
 #ifndef DINGUX
         if(Autoskip)
