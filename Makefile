@@ -53,8 +53,8 @@ CFLAGS = -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-varia
 CPPFLAGS = $(CFLAGS)
 else
 ifeq "$(OSTYPE)" "gcwzero"
-CFLAGS = -DGCWZERO -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -g -O0 -march=mips32r2 -DANSI_GCC -DSDL_PATCH 
-#CFLAGS = -DGCWZERO -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -O3 -march=mips32r2 -DANSI_GCC -DSDL_PATCH 
+#CFLAGS = -DGCWZERO -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -g -O0 -march=mips32r2 -DANSI_GCC -DSDL_PATCH 
+CFLAGS = -DGCWZERO -DDINGUX -MMD -Wall -Wno-comment -Wno-unknown-pragmas -Wno-unused-variable  -O3 -march=mips32r2 -DANSI_GCC -DSDL_PATCH 
 #-fomit-frame-pointer -fsigned-char -ffast-math -falign-functions -falign-loops -falign-labels -falign-jumps -funroll-loops -fno-builtin -fno-common 
 CPPFLAGS = $(CFLAGS)
 endif

@@ -1089,7 +1089,6 @@ void gcw_display_bios_warning(void)
     TTF_Init();
     TTF_Font *ttffont = NULL;
     SDL_Color text_color = {255, 0, 0};
-    SDL_Color text_color_selected = {0,0,0};
     ttffont = TTF_OpenFont("./ProggyTiny.ttf", 16);
     SDL_Surface *textSurface;
     textSurface = TTF_RenderText_Solid(ttffont, "No bios found!", text_color);
@@ -1100,17 +1099,14 @@ void gcw_display_bios_warning(void)
     destination.h = 230;
     SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
     SDL_FreeSurface(textSurface);
-    textSurface = TTF_RenderText_Solid(ttffont, "Place lynxboot.img", text_color);
+    textSurface = TTF_RenderText_Solid(ttffont, "Place lynxboot.img in $HOME/.handy", text_color);
     destination.y = 40;
-    SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
-    SDL_FreeSurface(textSurface);
-    textSurface = TTF_RenderText_Solid(ttffont, "in $HOME/.handy", text_color);
-    destination.y = 70;
     SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
     SDL_FreeSurface(textSurface);
     TTF_CloseFont (ttffont);
     SDL_Flip(mainSurface);
     SDL_Delay(4000);
+    SDL_FreeSurface(mainSurface);
     exit(0);
 }
 #endif
