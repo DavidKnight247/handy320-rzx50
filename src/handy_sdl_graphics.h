@@ -65,6 +65,7 @@
 
 #ifdef GCWZERO
 extern int redrawbackground;
+void gcw_display_bios_warning(void);
 #endif
 
 inline	void    handy_sdl_scale(void);

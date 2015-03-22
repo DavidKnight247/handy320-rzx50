@@ -82,6 +82,7 @@ int redrawbackground;
 int originalshow;
 int lynxversion;
 int everyotherframe;
+static int gcw_no_bios;
 #endif
 
 /* Handy declarations */
@@ -367,9 +368,20 @@ void handy_sdl_core_init(char *romname)
     try {
         mpLynx = new CSystem(romname, bios_path_and_name);
     } catch (CLynxException &err) {
+#ifdef GCWZERO //catch error and display warning message instead
+        gcw_no_bios=1;
+#else
         cerr << err.mMsg.str() << ": " << err.mDesc.str() << endl;
         exit(EXIT_FAILURE);
+#endif
     }
+#ifdef GCWZERO
+    if (gcw_no_bios)
+    {
+        printf("[BIOS NOT FOUND!]\n\n");
+        return;
+    }
+#endif
     printf("[DONE]\n\n");
 
     // DEBUG
@@ -613,7 +625,10 @@ int main(int argc, char *argv[])
     {
         return 0;
     }
-
+#ifdef GCWZERO
+    if(gcw_no_bios)
+        gcw_display_bios_warning();
+#endif
     // Initialise Handy/SDL audio
     printf("\nInitialising SDL Audio...     ");
     if(handy_sdl_audio_init())

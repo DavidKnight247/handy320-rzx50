@@ -1,3 +1,4 @@
+
 //
 // Copyright (c) 2004 SDLemu Team
 //
@@ -63,6 +64,7 @@
 #include <SDL/SDL_timer.h>
 #ifdef GCWZERO
 #include <SDL/SDL_image.h>
+#include <SDL/SDL_ttf.h>
 #endif
 #include "handy_sdl_main.h"
 #include "handy_sdl_graphics.h"
@@ -1078,5 +1080,37 @@ inline void handy_sdl_scale(void)
 void    handy_sdl_video_close(void)
 {
     sdlemu_close_overlay();
+}
+#endif
+#ifdef GCWZERO
+void gcw_display_bios_warning(void)
+{
+    mainSurface  = SDL_SetVideoMode(320, 240, 16, SDL_HWSURFACE | SDL_DOUBLEBUF);
+    TTF_Init();
+    TTF_Font *ttffont = NULL;
+    SDL_Color text_color = {255, 0, 0};
+    SDL_Color text_color_selected = {0,0,0};
+    ttffont = TTF_OpenFont("./ProggyTiny.ttf", 16);
+    SDL_Surface *textSurface;
+    textSurface = TTF_RenderText_Solid(ttffont, "No bios found!", text_color);
+    SDL_Rect destination;
+    destination.x = 30;
+    destination.y = 10;
+    destination.w = 290; 
+    destination.h = 230;
+    SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
+    SDL_FreeSurface(textSurface);
+    textSurface = TTF_RenderText_Solid(ttffont, "Place lynxboot.img", text_color);
+    destination.y = 40;
+    SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
+    SDL_FreeSurface(textSurface);
+    textSurface = TTF_RenderText_Solid(ttffont, "in $HOME/.handy", text_color);
+    destination.y = 70;
+    SDL_BlitSurface(textSurface, NULL, mainSurface, &destination);
+    SDL_FreeSurface(textSurface);
+    TTF_CloseFont (ttffont);
+    SDL_Flip(mainSurface);
+    SDL_Delay(4000);
+    exit(0);
 }
 #endif
