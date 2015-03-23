@@ -1,3 +1,14 @@
+GCW0 port of Handy,
+
+Based on the OpenDingux port by d_smagin.
+
+COMPILE INSTRUCTIONS
+Make sure you have correctly installed the gcw0 toolchain: http://www.gcw-zero.com/develop
+
+./gcw0buildscript.sh
+
+Original readme follows:
+
 --------------------------------------------
 Handy/SDL v0.5 release README
 --------------------------------------------
